@@ -24,15 +24,18 @@ public:
 		bool FTP_CreateControlSocket(const FString& ip, int32 port);
 
 	UFUNCTION(BlueprintCallable, Category = "FTP")
-		bool FTP_RecvData(FString& RecvMesg, bool bSleep = true);
-
-	UFUNCTION(BlueprintCallable, Category = "FTP")
 		bool FTP_SendCommand(EFtpCommandType type, FString Param);
 
 	UFUNCTION(BlueprintCallable, Category = "FTP")
-		bool FTP_CreateDataSocket_PASV(int32 port);
+		bool FTP_DownloadFile(FString ServerFilePath, FString SavePath);
 
 	UFUNCTION(BlueprintCallable, Category = "FTP")
-		bool test();
+		bool FTP_DownloadFiles(const FString& serverFolder, const FString& localSavePath);
+
+	UFUNCTION(BlueprintCallable, Category = "FTP")
+		bool FTP_List(const FString& serverPath, TArray<FString>& OutFiles);
+
+	UFUNCTION(BlueprintCallable, Category = "FTP")
+		bool FTP_UploadFiles(const FString& localPath);
 
 };

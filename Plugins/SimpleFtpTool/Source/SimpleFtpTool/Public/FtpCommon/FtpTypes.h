@@ -40,3 +40,10 @@ enum class EFtpCommandType : uint8
 	QUIT		
 
 };
+
+UENUM(BlueprintType)
+enum class EFileType : uint8
+{
+	FOLDER = 0,
+	FILE
+};

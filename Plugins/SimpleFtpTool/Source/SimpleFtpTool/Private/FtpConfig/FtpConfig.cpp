@@ -10,6 +10,6 @@ UFtpConfig::UFtpConfig()
 
 	ServerIP = TEXT("192.168.0.4");
 
-	ServerPort = 2121;
+	ServerPort = 21;
 }
 

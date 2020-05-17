@@ -4,8 +4,8 @@
 #include "CoreMinimal.h"
 #include "Networking.h"
 #include "FtpConfig/FtpConfig.h"
-#include "FtpClient/FtpTypes.h" 
-#include "FtpClient/FtpMacro.h"
+#include "FtpCommon/FtpTypes.h" 
+#include "FtpCommon/FtpMacro.h"
 
 
 
@@ -24,39 +24,58 @@ private:
 	//数据连接： 在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
 	FSocket* dataSocket;
 	FIPv4Address ipAddr;
+	//Debug
+	void Print(const FString& Mesg, float Time = 100.f, FColor Color = FColor::Yellow);
+	void Print(const TArray<uint8>& dataArray, float Time = 100.f, FColor Color = FColor::Purple);
 
 public:
-	
 	/*********************************************************************/
 	/*************************ftp客户端操作接口****************************/
 	/*********************************************************************/
 	//创建controlsocket
-	bool FTP_CreateControlSocket(FString IP = TEXT("192.168.0.4"), int32 port = 21);
-	//接受服务端返回的消息
-	bool FTP_ReceiveData(FString& RecvMesg, bool bSleep = true);
+	bool FTP_CreateControlSocket(FString IP = TEXT("127.0.0.1"), int32 port = 21);
 	//发送指令
 	bool FTP_SendCommand(const EFtpCommandType& cmdtype, const FString& Param);
-	
-	//创建 dataSocket
-	bool FTP_CreateDataSocket_PASV(int32 port2);
-	
-	
 	//需要用到数据连接的命令：NLST,LIST,RETR,STOR
-	bool FTP_StorFile(const FString& servetPath, const FString& localFilePath);
+	//列举文件夹 (相对路径)
+	bool FTP_ListFile(const FString& serverPath, TArray<FString>& OutFiles, bool bIncludeFolder=true);
+	//下载单个文件 规定文件路径用/隔开 如：/Folder1/Folder2/adadd.txt localpath:需要用绝对路径如：E:/Game/Folder
+	bool FTP_DownloadOneFile(const FString& serverFileName, const FString& localSavePath);
+	//下载文件夹里的所有文件 serverFolder:如 /asd				localpath:需要用绝对路径如：E:/Game/Folder
+	bool FTP_DownloadFiles(const FString& serverFolder, const FString& localSavePath);
+	//上传单个文件
+	bool FTP_UploadOneFile(const FString& localFileName);
+	//上传文件夹里的所有文件
+	bool FTP_UploadFiles(const FString& localPath);
+
 
 private:
-	//将接收到的数据转换成FString
+	//接受服务端返回的消息
+	bool ReceiveData(FSocket* sock, FString& RecvMesg, TArray<uint8>& dataArray, bool bSleep = true);
+	//创建 dataSocket
+	bool CreateDataSocket_PASV(int32 port2);
+	//将接收到的二进制数据转换成FString
 	FString BinaryArrayToString(TArray<uint8> BinaryArray);
 	//转换指令
 	FString SwitchCommand(const EFtpCommandType& cmdtype, const FString& Param);
 	//从服务器返回的字符串中获取新的端口号
 	int32 GetPASVPortFromString(const FString& RecvMesg);
 	//发送PASV命令，获取服务器返回的端口号  单独把这条命令拿出来是为了方便获取服务器返回的端口
-	int32 FTP_SendPASVCommand();
-private:
-
-	static FtpClientManager* ftpInstance;
+	int32 SendPASVCommand();
+	//判断传入的serverPath是文件 还是 文件夹
+	EFileType JudgeserverPath(const FString& InserverPath);
+	//列举路径下的所有文件(绝对路径)
+	bool ListAllFileFromLocalPath(const FString& localPath, TArray<FString>& AllFiles, bool bRecursively = true);
 	
+	//创建文件夹
+	bool CreateDir(const FString& InDir);
+	//删除文件夹里面所有内容
+	bool DeleteFileOrFolder(const FString& InDir, bool bForce = false);
+
+
+private:
+	static FtpClientManager* ftpInstance;
+	int32 ResponseCode; //服务器响应码
 };
 
 #define FTP_INSTANCE FtpClientManager::Get()
