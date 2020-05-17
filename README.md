@@ -1,2 +1,2 @@
 # ue4_FTP
-FileZilla for server.
+client of FileZilla server.
