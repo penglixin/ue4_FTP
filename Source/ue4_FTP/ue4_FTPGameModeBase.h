@@ -39,4 +39,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "FTP")
 		bool FTP_UploadFiles(const FString& localPath);
 
+
+
+		/**
+		 * ²âÊÔº¯Êý
+		 */
+	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
+		bool TEST_Function(TArray<FString>& NoValidFiles, const FString& InFolder);
 };

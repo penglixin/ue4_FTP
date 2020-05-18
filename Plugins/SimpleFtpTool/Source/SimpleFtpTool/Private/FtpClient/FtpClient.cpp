@@ -83,47 +83,49 @@ void FtpClientManager::Destroy()
 
 void FtpClientManager::Initialize_Folder()
 {
-	//   D:/Work/UE_4.22/UnrealProjects/HotUpdate/Content/
+	// D:/Work/UE_4.22/UnrealProjects/HotUpdate/Content/
 	FString ProjContentFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+	DataTypeIni = FPaths::ConvertRelativePathToFull(FPaths::ProjectConfigDir() / TEXT("DefaultDataTypeConfig.ini"));
 	//公共文件夹
-	FString CommonSKM = ProjContentFullPath + TEXT("Com_SkeletalMesh/ComSke.config");
-	FString CommonSTM = ProjContentFullPath + TEXT("Com_StaticMesh/ComStm.config");
-	FString CommonMAT = ProjContentFullPath + TEXT("Com_Material/ComMat.config");
-	FString CommonTEX = ProjContentFullPath + TEXT("Com_Texture/ComTex.config");
-	FString CommonMAP = ProjContentFullPath + TEXT("Map/ComMap.config");
+	FString CommonSKM = ProjContentFullPath + TEXT("Com_SkeletalMesh");
+	FString CommonSTM = ProjContentFullPath + TEXT("Com_StaticMesh");
+	FString CommonMAT = ProjContentFullPath + TEXT("Com_Material");
+	FString CommonTEX = ProjContentFullPath + TEXT("Com_Texture");
+	FString CommonMAP = ProjContentFullPath + TEXT("Map");
 
 	//项目实例
-	FString Instance = ProjContentFullPath + TEXT("Instance/Instance.config");
-	FString InstanceSKM = ProjContentFullPath + TEXT("Instance/Ins_SkeletalMesh/InsSke.config");
-	FString InstanceSTM = ProjContentFullPath + TEXT("Instance/Ins_StaticMesh/InsStm.config");
-	FString InstanceMAT = ProjContentFullPath + TEXT("Instance/Ins_Material/InsMat.config");
-	FString InstanceTEX = ProjContentFullPath + TEXT("Instance/Ins_Texture/InsTex.config");
-	FString InstanceANI = ProjContentFullPath + TEXT("Instance/Ins_Animation/InsAnim.config");
+	FString Instance = ProjContentFullPath + TEXT("Instance");
+	FString InstanceSKM = ProjContentFullPath + TEXT("Instance/Ins_SkeletalMesh");
+	FString InstanceSTM = ProjContentFullPath + TEXT("Instance/Ins_StaticMesh");
+	FString InstanceMAT = ProjContentFullPath + TEXT("Instance/Ins_Material");
+	FString InstanceTEX = ProjContentFullPath + TEXT("Instance/Ins_Texture");
+	FString InstanceANI = ProjContentFullPath + TEXT("Instance/Ins_Animation");
 
 	IPlatformFile& filePlatform = FPlatformFileManager::Get().GetPlatformFile();
-	if(!filePlatform.FileExists(*CommonSKM))
-		FFileHelper::SaveStringToFile(CommonSKM,*CommonSKM);
-	if (!filePlatform.FileExists(*CommonSTM))
-		FFileHelper::SaveStringToFile(CommonSTM, *CommonSTM);
-	if (!filePlatform.FileExists(*CommonMAT))
-		FFileHelper::SaveStringToFile(CommonMAT, *CommonMAT);
-	if (!filePlatform.FileExists(*CommonTEX))
-		FFileHelper::SaveStringToFile(CommonTEX, *CommonTEX);
-	if (!filePlatform.FileExists(*CommonMAP))
-		FFileHelper::SaveStringToFile(CommonMAP, *CommonMAP);
-
-	if (!filePlatform.FileExists(*Instance))
-		FFileHelper::SaveStringToFile(Instance, *Instance);
-	if (!filePlatform.FileExists(*InstanceSKM))
-		FFileHelper::SaveStringToFile(InstanceSKM, *InstanceSKM);
-	if (!filePlatform.FileExists(*InstanceSTM))
-		FFileHelper::SaveStringToFile(InstanceSTM, *InstanceSTM);
-	if (!filePlatform.FileExists(*InstanceMAT))
-		FFileHelper::SaveStringToFile(InstanceMAT, *InstanceMAT);
-	if (!filePlatform.FileExists(*InstanceTEX))
-		FFileHelper::SaveStringToFile(InstanceTEX, *InstanceTEX);
-	if (!filePlatform.FileExists(*InstanceANI))
-		FFileHelper::SaveStringToFile(InstanceANI, *InstanceANI);
+	if(!filePlatform.FileExists(*DataTypeIni))
+		FFileHelper::SaveStringToFile(TEXT(""),*DataTypeIni);
+	if(!filePlatform.DirectoryExists(*CommonSKM))
+		filePlatform.CreateDirectory(*CommonSKM);
+	if (!filePlatform.DirectoryExists(*CommonSTM))
+		filePlatform.CreateDirectory( *CommonSTM);
+	if (!filePlatform.DirectoryExists(*CommonMAT))
+		filePlatform.CreateDirectory(*CommonMAT);
+	if (!filePlatform.DirectoryExists(*CommonTEX))
+		filePlatform.CreateDirectory(*CommonTEX);
+	if (!filePlatform.DirectoryExists(*CommonMAP))
+		filePlatform.CreateDirectory(*CommonMAP);
+	if (!filePlatform.DirectoryExists(*Instance))
+		filePlatform.CreateDirectory(*Instance);
+	if (!filePlatform.DirectoryExists(*InstanceSKM))
+		filePlatform.CreateDirectory(*InstanceSKM);
+	if (!filePlatform.DirectoryExists(*InstanceSTM))
+		filePlatform.CreateDirectory(*InstanceSTM);
+	if (!filePlatform.DirectoryExists(*InstanceMAT))
+		filePlatform.CreateDirectory(*InstanceMAT);
+	if (!filePlatform.DirectoryExists(*InstanceTEX))
+		filePlatform.CreateDirectory(*InstanceTEX);
+	if (!filePlatform.DirectoryExists(*InstanceANI))
+		filePlatform.CreateDirectory(*InstanceANI);
 }
 
 /******************************************************************************/
@@ -441,6 +443,7 @@ bool FtpClientManager::DeleteFileOrFolder(const FString& InDir)
 
 bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFolder)
 {
+	bool bAllValid = true;
 	auto GetFolderType = [](FString InPath)->EFolderType
 	{
 		InPath.RemoveFromEnd(TEXT("/"));
@@ -476,18 +479,21 @@ bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, 
 	TArray<FString> numArr1; //这两个数组用来判断编号是否有重复  
 	TArray<FString> numArr2;
 
+	TArray<FString> AssetTypes;
+	FFileHelper::LoadFileToStringArray(AssetTypes, *DataTypeIni);
+
 	GetAllFileFromLocalPath(InFolder, AllFilePaths, true);
 	EFolderType type = GetFolderType(InFolder);
 	for (const auto& TempPath : AllFilePaths)
 	{
-		//   D:/Work/UE_4.22/UnrealProjects/HotUpdate/Content/Instance/Mat_Wood_Description_0.uasset
+		//   D:/Work/UE_4.22/UnrealProjects/HotUpdate/Content/Instance/Mat_Wood_0_Description.uasset
 		FString Extension = FPaths::GetExtension(TempPath, true);  // .uasset
-		if (Extension.Equals(TEXT(".config")))
+		if (!Extension.Equals(TEXT(".uasset")))
 		{
 			continue;
 		}
-		FString FileName = FPaths::GetCleanFilename(TempPath);     //Mat_Wood_Description_0.uasset
-		FileName.RemoveFromEnd(Extension);         //Mat_Wood_Description_0
+		FString FileName = FPaths::GetCleanFilename(TempPath);     //Mat_Wood_0_Description.uasset
+		FileName.RemoveFromEnd(Extension);						   //Mat_Wood_0_Description
 		AllFileNames.Add(FileName);
 	}
 	switch (type)
@@ -496,38 +502,228 @@ bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, 
 		//开始判断文件命名是否合法
 		for (const auto& TempName : AllFileNames)
 		{
-			numArr1.Add()
+			numArr1.Add(TempName);
 			TArray<FString> partArr;
 			TempName.ParseIntoArray(partArr, TEXT("_"), false);
-			if (4 != partArr.Num())  //是否含有三个下划线
+			if (!partArr[0].Equals(TEXT("Anim_"))) //判断前缀
 			{
+				bAllValid = false;
 				NoValidFiles.Add(TempName);
 				continue;
 			}
-			if (!TempName.StartsWith(TEXT("Anim_"))) //判断前缀
+			//判断Wood（根据配置文件）
+			bool bCorrect = false;
+			for (const auto& TempAeestType : AssetTypes)
 			{
-				NoValidFiles.Add(TempName);
-				continue;
+				FString l, r;
+				TempAeestType.Split(TEXT(":"), &l, &r);
+				if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))
+				{
+					continue;
+				}
+				else
+				{
+					bCorrect = true;
+					break;
+				}
 			}
-			numArr2.AddUnique(partArr[3]);  //找出所有编号，
+			if (!bCorrect)
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+			}
+			numArr2.AddUnique(partArr[2]);  //找出所有编号，
+			if(numArr1.Num() != numArr2.Num())
+			{
+				//说明编号有重复
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				numArr2.Add(FGuid::NewGuid().ToString());
+			}
 		}
-
 		break;
 	case EFolderType::MATERIAL:
+		//开始判断文件命名是否合法
+		for (const auto& TempName : AllFileNames)
+		{
+			numArr1.Add(TempName);
+			TArray<FString> partArr;
+			TempName.ParseIntoArray(partArr, TEXT("_"), false);
+			if (!partArr[0].Equals(TEXT("Mat"))) //判断前缀
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				continue;
+			}
+			//判断Wood（根据配置文件）
+			bool bCorrect = false;
+			for (const auto& TempAeestType : AssetTypes)
+			{
+				FString l, r;
+				TempAeestType.Split(TEXT(":"), &l, &r);
+				if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))
+				{
+					continue;
+				}
+				else
+				{
+					bCorrect = true;
+					break;
+				}
+			}
+			if(!bCorrect)
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+			}
+			numArr2.AddUnique(partArr[2]);  //找出所有编号
+			if (numArr1.Num() != numArr2.Num())
+			{
+				//说明编号有重复
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				numArr2.Add(FGuid::NewGuid().ToString());
+			}
+		}
 		break;
 	case EFolderType::SKLETALMESH:
+		//开始判断文件命名是否合法
+		for (const auto& TempName : AllFileNames)
+		{
+			numArr1.Add(TempName);
+			TArray<FString> partArr;
+			TempName.ParseIntoArray(partArr, TEXT("_"), false);
+			if (!partArr[0].Equals(TEXT("Skm"))) //判断前缀
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				continue;
+			}
+			//判断Wood（根据配置文件）
+			bool bCorrect = false;
+			for (const auto& TempAeestType : AssetTypes)
+			{
+				FString l, r;
+				TempAeestType.Split(TEXT(":"), &l, &r);
+				if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))
+				{
+					continue;
+				}
+				else
+				{
+					bCorrect = true;
+					break;
+				}
+			}
+			if (!bCorrect)
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+			}
+			numArr2.AddUnique(partArr[2]);  //找出所有编号，
+			if (numArr1.Num() != numArr2.Num())
+			{
+				//说明编号有重复
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				numArr2.Add(FGuid::NewGuid().ToString());
+			}
+		}
 		break;
 	case EFolderType::STATICMESH:
+		//开始判断文件命名是否合法
+		for (const auto& TempName : AllFileNames)
+		{
+			numArr1.Add(TempName);
+			TArray<FString> partArr;
+			TempName.ParseIntoArray(partArr, TEXT("_"), false);
+			if (!partArr[0].Equals(TEXT("Stm"))) //判断前缀
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				continue;
+			}
+			//判断Wood（根据配置文件）
+			bool bCorrect = false;
+			for (const auto& TempAeestType : AssetTypes)
+			{
+				FString l, r;
+				TempAeestType.Split(TEXT(":"), &l, &r);
+				if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))
+				{
+					continue;
+				}
+				else
+				{
+					bCorrect = true;
+					break;
+				}
+			}
+			if (!bCorrect)
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+			}
+			numArr2.AddUnique(partArr[2]);  //找出所有编号，
+			if (numArr1.Num() != numArr2.Num())
+			{
+				//说明编号有重复
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				numArr2.Add(FGuid::NewGuid().ToString());
+			}
+		}
 		break;
 	case EFolderType::TEXTURE:
+		//开始判断文件命名是否合法
+		for (const auto& TempName : AllFileNames)
+		{
+			numArr1.Add(TempName);
+			TArray<FString> partArr;
+			TempName.ParseIntoArray(partArr, TEXT("_"), false);
+			if (!partArr[0].Equals(TEXT("Tex"))) //判断前缀
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				continue;
+			}
+			//判断Wood（根据配置文件）
+			bool bCorrect = false;
+			for (const auto& TempAeestType : AssetTypes)
+			{
+				FString l, r;
+				TempAeestType.Split(TEXT(":"), &l, &r);
+				if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))
+				{
+					continue;
+				}
+				else
+				{
+					bCorrect = true;
+					break;
+				}
+			}
+			if (!bCorrect)
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+			}
+			numArr2.AddUnique(partArr[2]);  //找出所有编号，
+			if (numArr1.Num() != numArr2.Num())
+			{
+				//说明编号有重复
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				numArr2.Add(FGuid::NewGuid().ToString());
+			}
+		}
 		break;
 	default:
+		bAllValid = false;
 		break;
 	}
-
-	return false;
+	return bAllValid;
 }
-
 
 /******************************************************************************/
 /******************************************************************************/
@@ -817,6 +1013,11 @@ bool FtpClientManager::FTP_UploadFiles(const FString& localPath)
 		break;
 	}
 	return bSucceed;
+}
+
+bool FtpClientManager::ftp_test(TArray<FString>& NoValidFiles, const FString& InFolder)
+{
+	return FileValidationOfOneFolder(NoValidFiles, InFolder);
 }
 
 #if PLATFORM_WINDOWS

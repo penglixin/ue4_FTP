@@ -40,6 +40,7 @@ public:
 	//上传文件夹里的所有文件
 	bool FTP_UploadFiles(const FString& localPath);
 
+	bool ftp_test(TArray<FString>& NoValidFiles, const FString& InFolder);
 
 private:
 	//接受服务端返回的消息
@@ -73,12 +74,15 @@ private:
 private:
 	static FtpClientManager* ftpInstance;
 	int32 ResponseCode; //服务器响应码
-
 	//控制连接 :一直保持连接直到程序结束，或者服务器关闭
 	FSocket* controlSocket;
 	//数据连接： 在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
 	FSocket* dataSocket;
 	FIPv4Address ipAddr;
+
+
+private:
+	FString DataTypeIni;
 
 };
 

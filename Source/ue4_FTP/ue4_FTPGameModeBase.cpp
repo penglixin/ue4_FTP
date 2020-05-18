@@ -50,3 +50,8 @@ bool Aue4_FTPGameModeBase::FTP_UploadFiles(const FString& localPath)
 	return FTP_INSTANCE->FTP_UploadFiles(localPath);
 }
 
+bool Aue4_FTPGameModeBase::TEST_Function(TArray<FString>& NoValidFiles, const FString& InFolder)
+{
+	return FTP_INSTANCE->ftp_test(NoValidFiles,InFolder);
+}
+
