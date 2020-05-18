@@ -16,18 +16,10 @@ public:
 	FtpClientManager();
 	~FtpClientManager();
 	static FtpClientManager* Get();
-	static void Destroy();
-
-private:
-	//控制连接 :一直保持连接直到程序结束
-	FSocket* controlSocket;
-	//数据连接： 在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
-	FSocket* dataSocket;
-	FIPv4Address ipAddr;
-	//Debug
-	void Print(const FString& Mesg, float Time = 100.f, FColor Color = FColor::Yellow);
-	void Print(const TArray<uint8>& dataArray, float Time = 100.f, FColor Color = FColor::Purple);
-
+	static void Destroy(); 
+	//初始化文件目录结构
+	void Initialize_Folder();
+	
 public:
 	/*********************************************************************/
 	/*************************ftp客户端操作接口****************************/
@@ -38,7 +30,7 @@ public:
 	bool FTP_SendCommand(const EFtpCommandType& cmdtype, const FString& Param);
 	//需要用到数据连接的命令：NLST,LIST,RETR,STOR
 	//列举文件夹 (相对路径)
-	bool FTP_ListFile(const FString& serverPath, TArray<FString>& OutFiles, bool bIncludeFolder=true);
+	bool FTP_ListFile(const FString& serverPath, TArray<FString>& OutFiles, bool bIncludeFolder = true);
 	//下载单个文件 规定文件路径用/隔开 如：/Folder1/Folder2/adadd.txt localpath:需要用绝对路径如：E:/Game/Folder
 	bool FTP_DownloadOneFile(const FString& serverFileName, const FString& localSavePath);
 	//下载文件夹里的所有文件 serverFolder:如 /asd				localpath:需要用绝对路径如：E:/Game/Folder
@@ -65,17 +57,29 @@ private:
 	//判断传入的serverPath是文件 还是 文件夹
 	EFileType JudgeserverPath(const FString& InserverPath);
 	//列举路径下的所有文件(绝对路径)
-	bool ListAllFileFromLocalPath(const FString& localPath, TArray<FString>& AllFiles, bool bRecursively = true);
-	
+	bool GetAllFileFromLocalPath(const FString& localPath, TArray<FString>& AllFiles, bool bRecursively = true); 
 	//创建文件夹
 	bool CreateDir(const FString& InDir);
 	//删除文件夹里面所有内容
-	bool DeleteFileOrFolder(const FString& InDir, bool bForce = false);
+	bool DeleteFileOrFolder(const FString& InDir);
 
+	//检测单个文件夹下的文件命名是否合法
+	bool FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFolder);
+private:
+	//Debug
+	void Print(const FString& Mesg, float Time = 100.f, FColor Color = FColor::Yellow);
+	void Print(const TArray<uint8>& dataArray, float Time = 100.f, FColor Color = FColor::Purple);
 
 private:
 	static FtpClientManager* ftpInstance;
 	int32 ResponseCode; //服务器响应码
+
+	//控制连接 :一直保持连接直到程序结束，或者服务器关闭
+	FSocket* controlSocket;
+	//数据连接： 在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
+	FSocket* dataSocket;
+	FIPv4Address ipAddr;
+
 };
 
 #define FTP_INSTANCE FtpClientManager::Get()

@@ -19,7 +19,7 @@ public:
 	UFtpConfig();
 
 	UPROPERTY(config, EditAnywhere, Category = "Debug", meta = (ToolTip = "show the debug message."))
-		bool bShowDebug;
+		bool bShowServerMesg;
 
 	UPROPERTY(config, EditAnywhere, Category = "Debug", meta = (ClampMin =0.f, ClampMax = 1.f, ToolTip = "sleep time."))
 		float sleeptime;

@@ -26,7 +26,7 @@ int64_t getFileSize(const FString& InfilePath)
 
 void FtpClientManager::Print(const FString& Mesg, float Time, FColor Color)
 {
-	if (GEngine && GetDefault<UFtpConfig>()->bShowDebug)
+	if (GEngine && GetDefault<UFtpConfig>()->bShowServerMesg)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, Time, Color, Mesg);
 	}
@@ -34,7 +34,7 @@ void FtpClientManager::Print(const FString& Mesg, float Time, FColor Color)
 
 void FtpClientManager::Print(const TArray<uint8>& dataArray, float Time, FColor Color)
 {
-	if (GEngine && GetDefault<UFtpConfig>()->bShowDebug)
+	if (GEngine && GetDefault<UFtpConfig>()->bShowServerMesg)
 	{
 
 		GEngine->AddOnScreenDebugMessage(-1, Time, Color, BinaryArrayToString(dataArray));
@@ -81,6 +81,50 @@ void FtpClientManager::Destroy()
 	ftpInstance = nullptr;
 }
 
+void FtpClientManager::Initialize_Folder()
+{
+	//   D:/Work/UE_4.22/UnrealProjects/HotUpdate/Content/
+	FString ProjContentFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+	//公共文件夹
+	FString CommonSKM = ProjContentFullPath + TEXT("Com_SkeletalMesh/ComSke.config");
+	FString CommonSTM = ProjContentFullPath + TEXT("Com_StaticMesh/ComStm.config");
+	FString CommonMAT = ProjContentFullPath + TEXT("Com_Material/ComMat.config");
+	FString CommonTEX = ProjContentFullPath + TEXT("Com_Texture/ComTex.config");
+	FString CommonMAP = ProjContentFullPath + TEXT("Map/ComMap.config");
+
+	//项目实例
+	FString Instance = ProjContentFullPath + TEXT("Instance/Instance.config");
+	FString InstanceSKM = ProjContentFullPath + TEXT("Instance/Ins_SkeletalMesh/InsSke.config");
+	FString InstanceSTM = ProjContentFullPath + TEXT("Instance/Ins_StaticMesh/InsStm.config");
+	FString InstanceMAT = ProjContentFullPath + TEXT("Instance/Ins_Material/InsMat.config");
+	FString InstanceTEX = ProjContentFullPath + TEXT("Instance/Ins_Texture/InsTex.config");
+	FString InstanceANI = ProjContentFullPath + TEXT("Instance/Ins_Animation/InsAnim.config");
+
+	IPlatformFile& filePlatform = FPlatformFileManager::Get().GetPlatformFile();
+	if(!filePlatform.FileExists(*CommonSKM))
+		FFileHelper::SaveStringToFile(CommonSKM,*CommonSKM);
+	if (!filePlatform.FileExists(*CommonSTM))
+		FFileHelper::SaveStringToFile(CommonSTM, *CommonSTM);
+	if (!filePlatform.FileExists(*CommonMAT))
+		FFileHelper::SaveStringToFile(CommonMAT, *CommonMAT);
+	if (!filePlatform.FileExists(*CommonTEX))
+		FFileHelper::SaveStringToFile(CommonTEX, *CommonTEX);
+	if (!filePlatform.FileExists(*CommonMAP))
+		FFileHelper::SaveStringToFile(CommonMAP, *CommonMAP);
+
+	if (!filePlatform.FileExists(*Instance))
+		FFileHelper::SaveStringToFile(Instance, *Instance);
+	if (!filePlatform.FileExists(*InstanceSKM))
+		FFileHelper::SaveStringToFile(InstanceSKM, *InstanceSKM);
+	if (!filePlatform.FileExists(*InstanceSTM))
+		FFileHelper::SaveStringToFile(InstanceSTM, *InstanceSTM);
+	if (!filePlatform.FileExists(*InstanceMAT))
+		FFileHelper::SaveStringToFile(InstanceMAT, *InstanceMAT);
+	if (!filePlatform.FileExists(*InstanceTEX))
+		FFileHelper::SaveStringToFile(InstanceTEX, *InstanceTEX);
+	if (!filePlatform.FileExists(*InstanceANI))
+		FFileHelper::SaveStringToFile(InstanceANI, *InstanceANI);
+}
 
 /******************************************************************************/
 /******************************************************************************/
@@ -308,7 +352,7 @@ EFileType FtpClientManager::JudgeserverPath(const FString &InserverPath)
 	return EFileType::FILE;
 }
 
-bool FtpClientManager::ListAllFileFromLocalPath(const FString& localPath, TArray<FString>& AllFiles, bool bRecursively)
+bool FtpClientManager::GetAllFileFromLocalPath(const FString& localPath, TArray<FString>& AllFiles, bool bRecursively)
 {
 	class FileVisitor : public IPlatformFile::FDirectoryVisitor
 	{
@@ -343,7 +387,7 @@ bool FtpClientManager::CreateDir(const FString& InDir)
 	return false;
 }
 
-bool FtpClientManager::DeleteFileOrFolder(const FString& InDir, bool bForce)
+bool FtpClientManager::DeleteFileOrFolder(const FString& InDir)
 {
 	bool bSuccessed = true;
 	FString Extension = FPaths::GetExtension(InDir,false);
@@ -355,33 +399,30 @@ bool FtpClientManager::DeleteFileOrFolder(const FString& InDir, bool bForce)
 		if(FTP_ListFile(InDir, AllOutFiles, true))
 		{
 			RemoveArray = AllOutFiles;
-			if (bForce)
+			for (const auto& Temp : RemoveArray)
 			{
-				for(const auto& Temp : RemoveArray)
+				Extension = FPaths::GetExtension(Temp);
+				if (!Extension.IsEmpty())
 				{
-					Extension = FPaths::GetExtension(Temp);
-					if(!Extension.IsEmpty())
-					{
-						//先删除所有文件，然后再递归删除所有文件夹
-						FTP_SendCommand(EFtpCommandType::DELE, Temp);
-						AllOutFiles.Remove(Temp);
-					}
+					//先删除所有文件，然后再递归删除所有文件夹
+					FTP_SendCommand(EFtpCommandType::DELE, Temp);
+					AllOutFiles.Remove(Temp);
 				}
-				//所有文件夹
-				RemoveArray = AllOutFiles;
-				for (const auto& TempFolder : RemoveArray) //删除所有可以删除的文件夹
-				{
-					if (FTP_SendCommand(EFtpCommandType::RMD, TempFolder))
-					{
-						if (ERROR_DIRECTORY != ResponseCode)
-						{
-							AllOutFiles.Remove(TempFolder);
-						}
-					}
-				}
-				//剩下所有的都是无法删除的文件夹，继续递归
-				DeleteFileOrFolder(InDir, bForce);
 			}
+			//所有文件夹
+			RemoveArray = AllOutFiles;
+			for (const auto& TempFolder : RemoveArray) //删除所有可以删除的文件夹
+			{
+				if (FTP_SendCommand(EFtpCommandType::RMD, TempFolder))
+				{
+					if (ERROR_DIRECTORY != ResponseCode)
+					{
+						AllOutFiles.Remove(TempFolder);
+					}
+				}
+			}
+			//剩下所有的都是无法删除的文件夹，继续递归
+			DeleteFileOrFolder(InDir);
 			return true;
 		}
 		return false;
@@ -397,6 +438,96 @@ bool FtpClientManager::DeleteFileOrFolder(const FString& InDir, bool bForce)
 	}
 	return bSuccessed;
 }
+
+bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFolder)
+{
+	auto GetFolderType = [](FString InPath)->EFolderType
+	{
+		InPath.RemoveFromEnd(TEXT("/"));
+		FString FolderName = FPaths::GetCleanFilename(InPath);
+		if (FolderName.Contains(TEXT("_Texture")))
+		{
+			return EFolderType::TEXTURE;
+		}
+		else if (FolderName.Contains(TEXT("_Material")))
+		{
+			return EFolderType::MATERIAL;
+		}
+		else if (FolderName.Contains(TEXT("_Animation")))
+		{
+			return EFolderType::ANIMATION;
+		}
+		else if (FolderName.Contains(TEXT("_SkletalMesh")))
+		{
+			return EFolderType::SKLETALMESH;
+		}
+		else if (FolderName.Contains(TEXT("_StaticMesh")))
+		{
+			return EFolderType::STATICMESH;
+		}
+		else
+		{
+			return EFolderType::ERROR_FOLDER;
+		} 
+	};
+	TArray<FString> AllFilePaths;  //保存文件夹下所有文件的绝对路径
+	TArray<FString> AllFileNames;  //保存文件夹下所有文件名
+
+	TArray<FString> numArr1; //这两个数组用来判断编号是否有重复  
+	TArray<FString> numArr2;
+
+	GetAllFileFromLocalPath(InFolder, AllFilePaths, true);
+	EFolderType type = GetFolderType(InFolder);
+	for (const auto& TempPath : AllFilePaths)
+	{
+		//   D:/Work/UE_4.22/UnrealProjects/HotUpdate/Content/Instance/Mat_Wood_Description_0.uasset
+		FString Extension = FPaths::GetExtension(TempPath, true);  // .uasset
+		if (Extension.Equals(TEXT(".config")))
+		{
+			continue;
+		}
+		FString FileName = FPaths::GetCleanFilename(TempPath);     //Mat_Wood_Description_0.uasset
+		FileName.RemoveFromEnd(Extension);         //Mat_Wood_Description_0
+		AllFileNames.Add(FileName);
+	}
+	switch (type)
+	{
+	case EFolderType::ANIMATION:
+		//开始判断文件命名是否合法
+		for (const auto& TempName : AllFileNames)
+		{
+			numArr1.Add()
+			TArray<FString> partArr;
+			TempName.ParseIntoArray(partArr, TEXT("_"), false);
+			if (4 != partArr.Num())  //是否含有三个下划线
+			{
+				NoValidFiles.Add(TempName);
+				continue;
+			}
+			if (!TempName.StartsWith(TEXT("Anim_"))) //判断前缀
+			{
+				NoValidFiles.Add(TempName);
+				continue;
+			}
+			numArr2.AddUnique(partArr[3]);  //找出所有编号，
+		}
+
+		break;
+	case EFolderType::MATERIAL:
+		break;
+	case EFolderType::SKLETALMESH:
+		break;
+	case EFolderType::STATICMESH:
+		break;
+	case EFolderType::TEXTURE:
+		break;
+	default:
+		break;
+	}
+
+	return false;
+}
+
 
 /******************************************************************************/
 /******************************************************************************/
@@ -625,6 +756,7 @@ bool FtpClientManager::FTP_UploadOneFile(const FString& localFileName)
 	{
 		serializedChar = SendStr.GetCharArray().GetData();
 		size = (int32)getFileSize(localFileName);
+		//size = FPlatformFileManager::Get().GetPlatformFile().FileSize(*localFileName);
 	}
 	else
 	{
@@ -668,8 +800,10 @@ bool FtpClientManager::FTP_UploadFiles(const FString& localPath)
 	switch (filetype)
 	{
 	case EFileType::FOLDER:
-		if(ListAllFileFromLocalPath(localPath,localFiles))
+		if(GetAllFileFromLocalPath(localPath, localFiles))
 		{
+			//FileValidation  文件标准检测
+
 			for (const auto& Tempfilename : localFiles)
 			{
 				bSucceed = FTP_UploadOneFile(Tempfilename);

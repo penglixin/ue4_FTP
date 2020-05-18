@@ -6,7 +6,7 @@
 
 UFtpConfig::UFtpConfig()
 {
-	bShowDebug = true;
+	bShowServerMesg = true;
 
 	ServerIP = TEXT("192.168.0.4");
 

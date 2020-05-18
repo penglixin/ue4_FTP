@@ -19,6 +19,7 @@ public:
 
 	virtual void BeginPlay() override;
 
+public:
 
 	UFUNCTION(BlueprintCallable,Category = "FTP")
 		bool FTP_CreateControlSocket(const FString& ip, int32 port);

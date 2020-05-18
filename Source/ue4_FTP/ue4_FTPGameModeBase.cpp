@@ -2,11 +2,22 @@
 
 
 #include "ue4_FTPGameModeBase.h" 
+#include "Engine.h"
 
 void Aue4_FTPGameModeBase::BeginPlay()
-{	
+{
 	Super::BeginPlay();
 	
+	/*FString ContentPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+	bool removeSucc = ContentPath.RemoveFromEnd(TEXT("/"));
+	GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Purple, FString::FromInt(removeSucc) + ContentPath);
+
+	removeSucc = ContentPath.RemoveFromEnd(TEXT("/"));
+	GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Purple, FString::FromInt(removeSucc) + ContentPath);
+
+	ContentPath = FPaths::GetCleanFilename(ContentPath);*/
+	
+
 }
 
 bool Aue4_FTPGameModeBase::FTP_CreateControlSocket(const FString& ip, int32 port)
@@ -32,11 +43,6 @@ bool Aue4_FTPGameModeBase::FTP_DownloadFiles(const FString& serverFolder, const 
 bool Aue4_FTPGameModeBase::FTP_List(const FString& serverPath, TArray<FString>& OutFiles)
 {
 	return FTP_INSTANCE->FTP_ListFile(serverPath,OutFiles);
-}
-
-bool Aue4_FTPGameModeBase::FTP_DeleteAll(const FString& localFineName)
-{
-	return FTP_INSTANCE->FTP_DeleteAll(localFineName);
 }
 
 bool Aue4_FTPGameModeBase::FTP_UploadFiles(const FString& localPath)

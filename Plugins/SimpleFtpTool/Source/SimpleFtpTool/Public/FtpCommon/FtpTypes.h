@@ -47,3 +47,15 @@ enum class EFileType : uint8
 	FOLDER = 0,
 	FILE
 };
+
+
+UENUM(BlueprintType)
+enum class EFolderType : uint8
+{
+	MATERIAL = 0,
+	TEXTURE,
+	ANIMATION,
+	STATICMESH,
+	SKLETALMESH,
+	ERROR_FOLDER
+};
