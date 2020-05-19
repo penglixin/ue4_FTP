@@ -48,7 +48,6 @@ enum class EFileType : uint8
 	FILE
 };
 
-
 UENUM(BlueprintType)
 enum class EFolderType : uint8
 {

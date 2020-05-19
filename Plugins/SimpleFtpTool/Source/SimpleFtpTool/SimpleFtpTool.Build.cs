@@ -30,6 +30,7 @@ public class SimpleFtpTool : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
                 "Sockets",
                 "Networking",
+                "AssetRegistry"
             }
 			);
 			
@@ -45,7 +46,8 @@ public class SimpleFtpTool : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-                "Settings"
+                "Settings",
+                "ContentBrowser"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

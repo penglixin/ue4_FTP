@@ -9,6 +9,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "ISettingsModule.h"
+#include "ContentBrowserModule.h"
 #include "FtpClient/FtpClient.h"
 
 static const FName SimpleFtpToolTabName("SimpleFtpTool");
@@ -60,6 +61,14 @@ void FSimpleFtpToolModule::StartupModule()
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(SimpleFtpToolTabName, FOnSpawnTab::CreateRaw(this, &FSimpleFtpToolModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FSimpleFtpToolTabTitle", "SimpleFtpTool"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
+
+
+	//自定义菜单
+	{
+		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+		TArray<FContentBrowserMenuExtender_SelectedPaths>& ContentBrowserMenuExtender_SelectedPaths = ContentBrowserModule.GetAllPathViewContextMenuExtenders();
+		ContentBrowserMenuExtender_SelectedPaths.Add(FContentBrowserMenuExtender_SelectedPaths::CreateRaw(this, &FSimpleFtpToolModule::OnExtendContentBrowser));
+	}
 }
 
 void FSimpleFtpToolModule::ShutdownModule()
@@ -96,6 +105,30 @@ TSharedRef<SDockTab> FSimpleFtpToolModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				.Text(WidgetText)
 			]
 		];
+}
+
+TSharedRef<FExtender> FSimpleFtpToolModule::OnExtendContentBrowser(const TArray<FString>& NewPaths)
+{
+	TSharedRef<FExtender> Extender(new FExtender);
+
+	Extender->AddMenuExtension("FolderContext", EExtensionHook::Before, nullptr,
+		FMenuExtensionDelegate::CreateRaw(this, &FSimpleFtpToolModule::CreateSuMenuForContentBrowser, NewPaths));
+
+	return Extender;
+}
+
+void FSimpleFtpToolModule::CreateSuMenuForContentBrowser(FMenuBuilder& MenuBuilder, const TArray<FString>& NewPaths)
+{
+	MenuBuilder.AddMenuEntry(
+		LOCTEXT("CreateInstance", "create an instance folder"),
+		LOCTEXT("CreateInstanceTips", "create an instance folder"),
+		FSlateIcon(),
+		FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::CreateInstanceFolder, NewPaths)));
+}
+
+void FSimpleFtpToolModule::CreateInstanceFolder(const TArray<FString>& NewPaths)
+{
+	FTP_INSTANCE->CreateInstanceFolder(NewPaths[0]);
 }
 
 void FSimpleFtpToolModule::PluginButtonClicked()

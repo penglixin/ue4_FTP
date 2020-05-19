@@ -27,5 +27,14 @@ private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 
 private:
+	//自定义菜单
+	TSharedRef<FExtender> OnExtendContentBrowser(const TArray<FString>& NewPaths);
+	void CreateSuMenuForContentBrowser(FMenuBuilder& MenuBuilder, const TArray<FString>& NewPaths);
+
+private:
+	//自定义菜单按钮点击事件
+	void CreateInstanceFolder(const TArray<FString>& NewPaths);
+
+private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 };

@@ -45,13 +45,23 @@ bool Aue4_FTPGameModeBase::FTP_List(const FString& serverPath, TArray<FString>& 
 	return FTP_INSTANCE->FTP_ListFile(serverPath,OutFiles);
 }
 
-bool Aue4_FTPGameModeBase::FTP_UploadFiles(const FString& localPath)
+bool Aue4_FTPGameModeBase::FTP_UploadFiles(const FString& localPath, TArray<FString>& NotValidFiles)
 {
-	return FTP_INSTANCE->FTP_UploadFiles(localPath);
+	return FTP_INSTANCE->FTP_UploadFiles(localPath, NotValidFiles);
 }
 
-bool Aue4_FTPGameModeBase::TEST_Function(TArray<FString>& NoValidFiles, const FString& InFolder)
+bool Aue4_FTPGameModeBase::TEST_Function(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences)
 {
-	return FTP_INSTANCE->ftp_test(NoValidFiles,InFolder);
+	return FTP_INSTANCE->ftp_test(InFolderPath, AllDependences);
+}
+
+bool Aue4_FTPGameModeBase::MoveFile(const FString& to, const FString& from, bool bReplace)
+{
+	return IFileManager::Get().Move(*to, *from, bReplace);
+}
+
+int32 Aue4_FTPGameModeBase::CopyFile(const FString& to, const FString& from, bool bReplace)
+{
+	return IFileManager::Get().Copy(*to, *from, bReplace);
 }
 

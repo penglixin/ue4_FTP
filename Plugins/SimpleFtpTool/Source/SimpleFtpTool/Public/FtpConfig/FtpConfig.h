@@ -21,7 +21,7 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "Debug", meta = (ToolTip = "show the debug message."))
 		bool bShowServerMesg;
 
-	UPROPERTY(config, EditAnywhere, Category = "Debug", meta = (ClampMin =0.f, ClampMax = 1.f, ToolTip = "sleep time."))
+	UPROPERTY(config, EditAnywhere, Category = "Debug", meta = (ClampMin =0.2f, ClampMax = 2.f, ToolTip = "sleep time."))
 		float sleeptime;
 
 	UPROPERTY(config, EditAnywhere, Category = "FtpSettings", meta = (ToolTip = "the ip of FTP Server."))

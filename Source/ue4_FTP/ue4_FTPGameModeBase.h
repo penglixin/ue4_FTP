@@ -37,7 +37,7 @@ public:
 		bool FTP_List(const FString& serverPath, TArray<FString>& OutFiles);
 
 	UFUNCTION(BlueprintCallable, Category = "FTP")
-		bool FTP_UploadFiles(const FString& localPath);
+		bool FTP_UploadFiles(const FString& localPath, TArray<FString>& NotValidFiles);
 
 
 
@@ -45,5 +45,11 @@ public:
 		 * ²âÊÔº¯Êý
 		 */
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
-		bool TEST_Function(TArray<FString>& NoValidFiles, const FString& InFolder);
+		bool TEST_Function(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences);
+
+	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
+		bool MoveFile(const FString& to, const FString& from, bool bReplace);
+
+	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
+		int32 CopyFile(const FString& to, const FString& from, bool bReplace);
 };

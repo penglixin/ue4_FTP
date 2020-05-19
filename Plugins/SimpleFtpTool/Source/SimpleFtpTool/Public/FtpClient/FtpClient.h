@@ -19,6 +19,8 @@ public:
 	static void Destroy(); 
 	//初始化文件目录结构
 	void Initialize_Folder();
+	//创建实例文件夹
+	void CreateInstanceFolder(const FString& InstanceName);
 	
 public:
 	/*********************************************************************/
@@ -38,9 +40,9 @@ public:
 	//上传单个文件
 	bool FTP_UploadOneFile(const FString& localFileName);
 	//上传文件夹里的所有文件
-	bool FTP_UploadFiles(const FString& localPath);
+	bool FTP_UploadFiles(const FString& localPath, TArray<FString>& NotValidFiles);
 
-	bool ftp_test(TArray<FString>& NoValidFiles, const FString& InFolder);
+	bool ftp_test(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences);
 
 private:
 	//接受服务端返回的消息
@@ -63,9 +65,12 @@ private:
 	bool CreateDir(const FString& InDir);
 	//删除文件夹里面所有内容
 	bool DeleteFileOrFolder(const FString& InDir);
-
 	//检测单个文件夹下的文件命名是否合法
 	bool FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFolder);
+	//寻找一个资源的所有依赖
+	void RecursiveFindDependence(const FString& InPackageName, TArray<FString>& AllDependence);
+	//寻找一个文件夹下的所有资源的所有依赖
+	void FindAllDependenceOfTheFolder(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences);
 private:
 	//Debug
 	void Print(const FString& Mesg, float Time = 100.f, FColor Color = FColor::Yellow);
@@ -83,7 +88,7 @@ private:
 
 private:
 	FString DataTypeIni;
-
+	TArray<FString> FolderPathNames;
 };
 
 #define FTP_INSTANCE FtpClientManager::Get()

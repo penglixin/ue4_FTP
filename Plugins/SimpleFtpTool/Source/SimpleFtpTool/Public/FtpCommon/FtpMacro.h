@@ -6,34 +6,45 @@
 #define SUCCEED_TRANSFER 226  //上传，下载成功
 
 
-//#define NAME_VALIDATION(Prefix) \    
-//for(const auto& TempName : AllFileNames) \
-//{  \
-//	numArr1.Add(TempName); \
-//	TArray<FString> partArr; \
-//	TempName.ParseIntoArray(partArr, TEXT("_"), false); \
-//	if (!partArr[0].Equals(TEXT(##Prefix))) \  
-//	{  \
-//		bAllValid = false;  \
-//		NoValidFiles.Add(TempName); \
-//		continue; \
-//	} \
-//	for (const auto& TempAeestType : AssetTypes) \
-//	{ \
-//		FString l, r; \
-//		TempAeestType.Split(TEXT(":"), &l, &r); \
-//		if ((partArr[1] == l) || (partArr[1] == r)) \
-//		{ \
-//			continue; \
-//		} \
-//		bAllValid = false; \
-//		NoValidFiles.Add(TempName); \
-//	}  \
-//	numArr2.AddUnique(partArr[2]); \ 
-//	if (numArr1.Num() != numArr2.Num()) \
-//	{  \
-//		bAllValid = false; \
-//		NoValidFiles.Add(TempName); \
-//		numArr2.Add(FGuid::NewGuid().ToString()); \
-//	}  \
-//}
+#define NAME_VALIDATION(Prefix)  \
+for (const auto& TempName : AllFileNames)\
+{\
+	FString UperFileName = TempName.ToUpper();\
+	numArr1.Add(TempName);\
+	TArray<FString> partArr;\
+	UperFileName.ParseIntoArray(partArr, TEXT("_"), false);\
+	if (!partArr[0].Equals(TEXT(##Prefix)))\
+	{\
+		bAllValid = false;\
+		NoValidFiles.Add(TempName);\
+		continue;\
+	}\
+	bool bCorrect = false;\
+	for (const auto& TempAeestType : AssetTypes)\
+	{\
+		FString UperAssetType = TempAeestType.ToUpper();\
+		FString l, r;\
+		UperAssetType.Split(TEXT(":"), &l, &r);\
+		if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))\
+		{\
+			continue;\
+		}\
+		else\
+		{\
+			bCorrect = true;\
+			break;\
+		}\
+	}\
+	if (!bCorrect)\
+	{\
+		bAllValid = false;\
+		NoValidFiles.Add(TempName);\
+	}\
+	numArr2.AddUnique(partArr[2]);\
+	if (numArr1.Num() != numArr2.Num())\
+	{\
+		bAllValid = false;\
+		NoValidFiles.Add(TempName);\
+		numArr2.Add(FGuid::NewGuid().ToString());\
+	}\
+}
