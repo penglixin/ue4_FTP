@@ -11,6 +11,7 @@
 #include "ISettingsModule.h"
 #include "ContentBrowserModule.h"
 #include "FtpClient/FtpClient.h"
+#include "Misc/MessageDialog.h"
 
 static const FName SimpleFtpToolTabName("SimpleFtpTool");
 
@@ -65,7 +66,7 @@ void FSimpleFtpToolModule::StartupModule()
 
 	//自定义菜单
 	{
-		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 		TArray<FContentBrowserMenuExtender_SelectedPaths>& ContentBrowserMenuExtender_SelectedPaths = ContentBrowserModule.GetAllPathViewContextMenuExtenders();
 		ContentBrowserMenuExtender_SelectedPaths.Add(FContentBrowserMenuExtender_SelectedPaths::CreateRaw(this, &FSimpleFtpToolModule::OnExtendContentBrowser));
 	}
@@ -111,13 +112,12 @@ TSharedRef<FExtender> FSimpleFtpToolModule::OnExtendContentBrowser(const TArray<
 {
 	TSharedRef<FExtender> Extender(new FExtender);
 
-	Extender->AddMenuExtension("FolderContext", EExtensionHook::Before, nullptr,
-		FMenuExtensionDelegate::CreateRaw(this, &FSimpleFtpToolModule::CreateSuMenuForContentBrowser, NewPaths));
+	Extender->AddMenuExtension("FolderContext", EExtensionHook::Before, nullptr, FMenuExtensionDelegate::CreateRaw(this, &FSimpleFtpToolModule::CreateSubMenuForContentBrowser, NewPaths));
 
 	return Extender;
 }
 
-void FSimpleFtpToolModule::CreateSuMenuForContentBrowser(FMenuBuilder& MenuBuilder, const TArray<FString>& NewPaths)
+void FSimpleFtpToolModule::CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths)
 {
 	MenuBuilder.AddMenuEntry(
 		LOCTEXT("CreateInstance", "create an instance folder"),
@@ -126,9 +126,20 @@ void FSimpleFtpToolModule::CreateSuMenuForContentBrowser(FMenuBuilder& MenuBuild
 		FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::CreateInstanceFolder, NewPaths)));
 }
 
-void FSimpleFtpToolModule::CreateInstanceFolder(const TArray<FString>& NewPaths)
+void FSimpleFtpToolModule::CreateInstanceFolder(TArray<FString> NewPaths)
 {
-	FTP_INSTANCE->CreateInstanceFolder(NewPaths[0]);
+	FString InsName = GetDefault<UFtpConfig>()->InsProjectName;
+	if (InsName.IsEmpty() || InsName.Contains(" ") || InsName.Contains(".") || InsName.Contains("_"))
+	{
+		FText DialogText = FText::Format(
+			LOCTEXT("Create Instance DialogText", " the instance name is wrong.\n please set '{0}' correctly in project settings.\n can not contain spaces, underscores'_', chinese and dots'.'"),
+			FText::FromString(TEXT("InsProjectName"))
+		);
+		FMessageDialog::Open(EAppMsgType::Ok, DialogText);
+		return;
+	}
+	
+	FTP_INSTANCE->CreateInstanceFolder(InsName);
 }
 
 void FSimpleFtpToolModule::PluginButtonClicked()

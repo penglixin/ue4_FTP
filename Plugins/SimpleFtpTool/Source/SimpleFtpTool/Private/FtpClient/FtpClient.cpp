@@ -140,6 +140,7 @@ void FtpClientManager::Initialize_Folder()
 		filePlatform.CreateDirectory(*InstanceTEX);
 	if (!filePlatform.DirectoryExists(*InstanceANI))
 		filePlatform.CreateDirectory(*InstanceANI);
+
 }
 
 void FtpClientManager::CreateInstanceFolder(const FString& InstanceName)
@@ -156,8 +157,10 @@ void FtpClientManager::CreateInstanceFolder(const FString& InstanceName)
 	FolderPathNames.Add(InstanceTEX);
 	FString InstanceANI = ProjectInstancePath + TEXT("/Ins_Animation");
 	FolderPathNames.Add(InstanceANI);
-
 	IPlatformFile& filePlatform = FPlatformFileManager::Get().GetPlatformFile();
+
+	if (!filePlatform.DirectoryExists(*ProjectInstancePath))
+		filePlatform.CreateDirectory(*ProjectInstancePath);
 	if (!filePlatform.DirectoryExists(*InstanceSKM))
 		filePlatform.CreateDirectory(*InstanceSKM);
 	if (!filePlatform.DirectoryExists(*InstanceSTM))
@@ -567,8 +570,11 @@ bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, 
 	return bAllValid;
 }
 
+// InPackageName ： /Game/Instance/Ins_Material/Mat_Wood_1_sad
 void FtpClientManager::RecursiveFindDependence(const FString& InPackageName, TArray<FString>& AllDependence)
 {
+	//添加自身
+	AllDependence.Add(InPackageName);
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::Get().LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	TArray<FName> OutDependencies;
 	AssetRegistryModule.GetDependencies(*InPackageName, OutDependencies, EAssetRegistryDependencyType::Packages);
@@ -586,7 +592,7 @@ void FtpClientManager::RecursiveFindDependence(const FString& InPackageName, TAr
 	}
 }
 
-//这边传入的路径都是相对路径   如：/Game/Insatnce/Ins_Material
+//这边传入的路径都是相对路径   如：/Game/Insatnce/Ins_Material    找到的依赖都是 PackageName
 void FtpClientManager::FindAllDependenceOfTheFolder(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences)
 {
 	for (const auto& TempPath : InFolderPath)
@@ -620,7 +626,7 @@ void FtpClientManager::FindAllDependenceOfTheFolder(const TArray<FString>& InFol
 /******************************************************************************/
 /******************************************************************************/
 /******************************************************************************/
-bool FtpClientManager::FTP_CreateControlSocket( FString IP,  int32 port)
+bool FtpClientManager::FTP_CreateControlSocket(FString IP,  int32 port)
 { 
 	if(controlSocket)
 	{
@@ -894,6 +900,7 @@ bool FtpClientManager::FTP_UploadFiles(const FString& localPath, TArray<FString>
 			//FileValidation  文件标准检测
 			for (const auto& TempFolderName : FolderPathNames)
 			{
+				//返回的是文件名（不带后缀）
 				FileValidationOfOneFolder(NotValidFiles, TempFolderName);
 			}
 			if (NotValidFiles.Num())

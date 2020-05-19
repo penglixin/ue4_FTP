@@ -29,11 +29,11 @@ private:
 private:
 	//自定义菜单
 	TSharedRef<FExtender> OnExtendContentBrowser(const TArray<FString>& NewPaths);
-	void CreateSuMenuForContentBrowser(FMenuBuilder& MenuBuilder, const TArray<FString>& NewPaths);
+	void CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths);  //不能传引用，只能内存拷贝
 
 private:
 	//自定义菜单按钮点击事件
-	void CreateInstanceFolder(const TArray<FString>& NewPaths);
+	void CreateInstanceFolder(TArray<FString> NewPaths);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
