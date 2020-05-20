@@ -37,7 +37,7 @@ public:
 		bool FTP_List(const FString& serverPath, TArray<FString>& OutFiles);
 
 	UFUNCTION(BlueprintCallable, Category = "FTP")
-		bool FTP_UploadFiles(const FString& localPath, TArray<FString>& NotValidFiles);
+		bool FTP_UploadFiles(const FString& localPath, TArray<FString>& NotValidFiles, TArray<FString>& DepeNotValidFiles);
 
 
 

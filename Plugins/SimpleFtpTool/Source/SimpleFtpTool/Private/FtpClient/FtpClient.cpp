@@ -7,6 +7,7 @@
 #include "HAL/PlatformFilemanager.h"
 #include <fstream>
 #include "AssetRegistryModule.h"
+#include "Misc/MessageDialog.h"
 
 
 #if WITH_EDITOR
@@ -41,6 +42,28 @@ void FtpClientManager::Print(const TArray<uint8>& dataArray, float Time, FColor 
 	{
 
 		GEngine->AddOnScreenDebugMessage(-1, Time, Color, BinaryArrayToString(dataArray));
+	}
+}
+
+void FtpClientManager::ShowMessageBox(const TArray<FString>& NameNotValidFiles, const TArray<FString>& DepenNotValidFiles)
+{
+	if (NameNotValidFiles.Num())
+	{
+		FString AllStr;
+		for (const auto& TEmpNameNotValid : NameNotValidFiles)
+		{
+			AllStr += TEmpNameNotValid + TEXT("\n");
+		}
+		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("The following asset name is not valid:\n" + AllStr));
+	}
+	if (DepenNotValidFiles.Num())
+	{
+		FString AllStr;
+		for (const auto& TEmpDepenNotValid : DepenNotValidFiles)
+		{
+			AllStr += TEmpDepenNotValid + TEXT("\n");
+		}
+		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("The following asset has invalid dependences:\n\n" + AllStr + "\nyou can try to copy the invalid dependences to the common folder or your instance folder."));
 	}
 }
 
@@ -91,28 +114,18 @@ void FtpClientManager::Initialize_Folder()
 	DataTypeIni = FPaths::ConvertRelativePathToFull(FPaths::ProjectConfigDir() / TEXT("DefaultDataTypeConfig.ini"));
 	//公共文件夹
 	FString CommonSKM = ProjContentFullPath + TEXT("Com_SkeletalMesh");
-	FolderPathNames.Add(CommonSKM);
 	FString CommonSTM = ProjContentFullPath + TEXT("Com_StaticMesh");
-	FolderPathNames.Add(CommonSTM);
 	FString CommonMAT = ProjContentFullPath + TEXT("Com_Material");
-	FolderPathNames.Add(CommonMAT);
 	FString CommonTEX = ProjContentFullPath + TEXT("Com_Texture");
-	FolderPathNames.Add(CommonTEX);
 	FString CommonMAP = ProjContentFullPath + TEXT("Map");
-	//FolderPathNames.Add(CommonMAP);
 
 	//项目实例
 	FString Instance = ProjContentFullPath + TEXT("Instance");
 	FString InstanceSKM = ProjContentFullPath + TEXT("Instance/Ins_SkeletalMesh");
-	FolderPathNames.Add(InstanceSKM);
 	FString InstanceSTM = ProjContentFullPath + TEXT("Instance/Ins_StaticMesh");
-	FolderPathNames.Add(InstanceSTM);
 	FString InstanceMAT = ProjContentFullPath + TEXT("Instance/Ins_Material");
-	FolderPathNames.Add(InstanceMAT);
 	FString InstanceTEX = ProjContentFullPath + TEXT("Instance/Ins_Texture");
-	FolderPathNames.Add(InstanceTEX);
 	FString InstanceANI = ProjContentFullPath + TEXT("Instance/Ins_Animation");
-	FolderPathNames.Add(InstanceANI);
 
 	IPlatformFile& filePlatform = FPlatformFileManager::Get().GetPlatformFile();
 	if(!filePlatform.FileExists(*DataTypeIni))
@@ -130,7 +143,7 @@ void FtpClientManager::Initialize_Folder()
 	if (!filePlatform.DirectoryExists(*Instance))
 		filePlatform.CreateDirectory(*Instance);
 
-	if (!filePlatform.DirectoryExists(*InstanceSKM))
+	/*if (!filePlatform.DirectoryExists(*InstanceSKM))
 		filePlatform.CreateDirectory(*InstanceSKM);
 	if (!filePlatform.DirectoryExists(*InstanceSTM))
 		filePlatform.CreateDirectory(*InstanceSTM);
@@ -139,7 +152,7 @@ void FtpClientManager::Initialize_Folder()
 	if (!filePlatform.DirectoryExists(*InstanceTEX))
 		filePlatform.CreateDirectory(*InstanceTEX);
 	if (!filePlatform.DirectoryExists(*InstanceANI))
-		filePlatform.CreateDirectory(*InstanceANI);
+		filePlatform.CreateDirectory(*InstanceANI);*/
 
 }
 
@@ -148,15 +161,10 @@ void FtpClientManager::CreateInstanceFolder(const FString& InstanceName)
 	FString ProjContentFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
 	FString ProjectInstancePath = ProjContentFullPath +TEXT("Instance/") + InstanceName;
 	FString InstanceSKM = ProjectInstancePath + TEXT("/Ins_SkeletalMesh");
-	FolderPathNames.Add(InstanceSKM);
 	FString InstanceSTM = ProjectInstancePath + TEXT("/Ins_StaticMesh");
-	FolderPathNames.Add(InstanceSTM);
 	FString InstanceMAT = ProjectInstancePath + TEXT("/Ins_Material");
-	FolderPathNames.Add(InstanceMAT);
 	FString InstanceTEX = ProjectInstancePath + TEXT("/Ins_Texture");
-	FolderPathNames.Add(InstanceTEX);
 	FString InstanceANI = ProjectInstancePath + TEXT("/Ins_Animation");
-	FolderPathNames.Add(InstanceANI);
 	IPlatformFile& filePlatform = FPlatformFileManager::Get().GetPlatformFile();
 
 	if (!filePlatform.DirectoryExists(*ProjectInstancePath))
@@ -486,7 +494,7 @@ bool FtpClientManager::DeleteFileOrFolder(const FString& InDir)
 	return bSuccessed;
 }
 
-bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFolder)
+bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFullFolderPath)
 {
 	bool bAllValid = true;
 	auto GetFolderType = [](FString InPath)->EFolderType
@@ -518,6 +526,7 @@ bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, 
 			return EFolderType::ERROR_FOLDER;
 		} 
 	};
+
 	TArray<FString> AllFilePaths;  //保存文件夹下所有文件的绝对路径
 	TArray<FString> AllFileNames;  //保存文件夹下所有文件名
 
@@ -527,8 +536,8 @@ bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, 
 	TArray<FString> AssetTypes;
 	FFileHelper::LoadFileToStringArray(AssetTypes, *DataTypeIni);
 
-	GetAllFileFromLocalPath(InFolder, AllFilePaths, true);
-	EFolderType type = GetFolderType(InFolder);
+	GetAllFileFromLocalPath(InFullFolderPath, AllFilePaths, true);
+	EFolderType type = GetFolderType(InFullFolderPath);
 	for (const auto& TempPath : AllFilePaths)
 	{
 		//   D:/Work/UE_4.22/UnrealProjects/HotUpdate/Content/Instance/Mat_Wood_0_Description.uasset
@@ -541,27 +550,81 @@ bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, 
 		FileName.RemoveFromEnd(Extension);						   //Mat_Wood_0_Description
 		AllFileNames.Add(FileName);
 	}
+	if (0 == AllFileNames.Num())
+		return true;
+
 	switch (type)
 	{
 	case EFolderType::ANIMATION:
 		//开始判断文件命名是否合法
-		NAME_VALIDATION("ANIM")
+		NAME_VALIDATION_FOLDER("ANIM")
 		break;
 	case EFolderType::MATERIAL:
 		//开始判断文件命名是否合法
-		NAME_VALIDATION("MAT")
+		NAME_VALIDATION_FOLDER("MAT")
 		break;
 	case EFolderType::SKLETALMESH:
 		//开始判断文件命名是否合法
-		NAME_VALIDATION("SKM")
+		NAME_VALIDATION_FOLDER("SKM")
 		break;
 	case EFolderType::STATICMESH:
 		//开始判断文件命名是否合法
-		NAME_VALIDATION("STM")
+		NAME_VALIDATION_FOLDER("STM")
 		break;
 	case EFolderType::TEXTURE:
 		//开始判断文件命名是否合法
-		NAME_VALIDATION("TEX")
+		NAME_VALIDATION_FOLDER("TEX")
+		/*for (const auto& TempName : AllFileNames)
+		{
+			FString UperFileName = TempName.ToUpper(); 
+			numArr1.Add(TempName); 
+			TArray<FString> partArr; 
+			UperFileName.ParseIntoArray(partArr, TEXT("_"), false); 
+			if (partArr.Num() != 4)
+			{
+				bAllValid = false; 
+				NoValidFiles.Add(TempName); 
+				numArr2.Add(FGuid::NewGuid().ToString());
+				continue;
+			}
+			if (!partArr[0].Equals(TEXT("TEX")))
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				numArr2.Add(FGuid::NewGuid().ToString());
+				continue;
+			}
+			bool bCorrect = false;
+			for (const auto& TempAeestType : AssetTypes)
+			{
+				FString UperAssetType = TempAeestType.ToUpper();
+				FString l, r;
+				UperAssetType.Split(TEXT(":"), &l, &r);
+				if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))
+				{
+					continue;
+				}
+				else
+				{
+					bCorrect = true;
+					break;
+				}
+			}
+			if (!bCorrect)
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				numArr2.Add(FGuid::NewGuid().ToString());
+				continue;
+			}
+			numArr2.AddUnique(partArr[2]);
+			if (numArr1.Num() != numArr2.Num())
+			{
+				bAllValid = false;
+				NoValidFiles.Add(TempName);
+				numArr2.Add(FGuid::NewGuid().ToString());
+			}
+		}*/
 		break;
 	default:
 		bAllValid = false;
@@ -574,7 +637,7 @@ bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, 
 void FtpClientManager::RecursiveFindDependence(const FString& InPackageName, TArray<FString>& AllDependence)
 {
 	//添加自身
-	AllDependence.Add(InPackageName);
+	//AllDependence.Add(InPackageName);
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::Get().LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	TArray<FName> OutDependencies;
 	AssetRegistryModule.GetDependencies(*InPackageName, OutDependencies, EAssetRegistryDependencyType::Packages);
@@ -592,36 +655,93 @@ void FtpClientManager::RecursiveFindDependence(const FString& InPackageName, TAr
 	}
 }
 
-//这边传入的路径都是相对路径   如：/Game/Insatnce/Ins_Material    找到的依赖都是 PackageName
-void FtpClientManager::FindAllDependenceOfTheFolder(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences)
+bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence)
 {
-	for (const auto& TempPath : InFolderPath)
+	//公共资源上传 
+
+	bool bValid = true;
+	FString InstName = FPaths::GetCleanFilename(InGamePath);
+	if (InstName.Contains("Ins_"))
 	{
-		FString CopyTemp = TempPath;
-		//先把相对路径转化成绝对路径 
-		//移除  /Game/
-		if (CopyTemp.RemoveFromStart(TEXT("/Game/")))
+		//上传的是Ins_***文件夹，先获取到他的父级目录
+		FString ParentFolder = InGamePath;
+		if (ParentFolder.RemoveFromEnd(TEXT("/") + InstName))
 		{
-			CopyTemp = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / CopyTemp);
-			//文件夹下的资源路径
-			TArray<FString> ContentAssetPaths;
-			IFileManager::Get().FindFilesRecursive(ContentAssetPaths, *CopyTemp, TEXT("*"), true, false);
-			for (const auto& Tempasset : ContentAssetPaths)
+			InstName = FPaths::GetCleanFilename(ParentFolder);
+		}
+	}
+	for (const auto& TempDep : TheAssetDependence)
+	{
+		if (TempDep.Contains("/Engine/"))
+		{
+			bValid = false;
+			break;
+		}
+		if (!TempDep.Contains(InstName))
+		{
+			//筛选出引用其他实例资源的文件
+			if (TempDep.Contains("/Instance/"))
 			{
-				TArray<FString> TheAssetDependence;
-				FString PackageName = FPackageName::FilenameToLongPackageName(Tempasset);
-				RecursiveFindDependence(PackageName, TheAssetDependence);
-				for (const auto& temp : TheAssetDependence)
-				{
-					AllDependences.AddUnique(temp);
-				}
-				//把该资源所有的依赖保存成一个文件
+				bValid = false;
+				break;
+			}
+		}
+	}
+	return bValid;
+}
+
+//这边传入的路径都是相对路径   如：/Game/Insatnce/ProjA    找到的依赖都是 PackageName
+bool FtpClientManager::ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FString>& NotValidDependences, bool bAllNameValid)
+{
+	bool bAllValid = true;
+	FString CopyTemp = InGamePath;
+	TArray<FString> AllDependences;
+	//先把相对路径转化成绝对路径 
+	//移除  /Game/
+	if (CopyTemp.RemoveFromStart(TEXT("/Game/")))
+	{
+		CopyTemp = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / CopyTemp);
+		//文件夹下的资源路径
+		TArray<FString> UassetSource;
+		TArray<FString> ContentAssetPaths;
+		IFileManager::Get().FindFilesRecursive(ContentAssetPaths, *CopyTemp, TEXT("*"), true, false);
+		for (const auto& temp : ContentAssetPaths)
+		{
+			if (temp.Contains(".uasset"))
+				UassetSource.Add(temp);
+		}
+		for (const auto& Tempasset : UassetSource)
+		{
+			TArray<FString> TheAssetDependence;
+			FString PackageName = FPackageName::FilenameToLongPackageName(Tempasset);
+			RecursiveFindDependence(PackageName, TheAssetDependence);
+			for (const auto& temp : TheAssetDependence)
+			{
+				AllDependences.AddUnique(temp);
+			}
+			//检查该资源的依赖是否合法
+			if (!ValidationDependenceOfOneAsset(InGamePath, PackageName, TheAssetDependence))
+			{
+				NotValidDependences.Add(PackageName);
+				bAllValid = false;
+			}
+			if (bAllNameValid)
+			{
+				//当所有资源的命名都合法 才把该资源所有的依赖保存成一个文件 
 				PackageName = Tempasset.Replace(TEXT(".uasset"), TEXT(".dep"));
 				FFileHelper::SaveStringArrayToFile(TheAssetDependence, *PackageName);
 			}
 		}
 	}
+	else
+		bAllValid = false;
+
+	//保存一份文件夹下所有文件的依赖
+	FString InstName = FPaths::GetCleanFilename(InGamePath) + TEXT(".dep");
+	FFileHelper::SaveStringArrayToFile(AllDependences, *(CopyTemp / InstName));
+	return bAllValid;
 }
+
 
 /******************************************************************************/
 /******************************************************************************/
@@ -887,49 +1007,218 @@ _Program_Endl:
 	return bSuccessed;
 }
 
-bool FtpClientManager::FTP_UploadFiles(const FString& localPath, TArray<FString>& NotValidFiles)
+//InGamePath：/Game/Instance/ProjA
+bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray<FString>& NameNotValidFiles, TArray<FString>& DepenNotValidFiles)
 {
-	bool bSucceed = false;
-	TArray<FString> localFiles;  //本地路径下的所有文件
-	EFileType filetype = JudgeserverPath(localPath);
-	switch (filetype)
+	// 传入的路径是/Game/Instance
+	// 先转化成绝对路径
+	FString FullPath = InGamePath;
+	if (FullPath.RemoveFromStart(TEXT("/Game/")))
 	{
-	case EFileType::FOLDER:
-		if(GetAllFileFromLocalPath(localPath, localFiles))
+		FullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FullPath);
+	}
+	TArray<FString> localFiles;  //本地路径下的所有文件
+	if (GetAllFileFromLocalPath(FullPath, localFiles))
+	{
+		bool bAllValid = true;
+		TArray<FString> ChildrenFolders;
+		IFileManager::Get().FindFilesRecursive(ChildrenFolders, *FullPath, TEXT("*"), false, true);
+		if (ChildrenFolders.Num())
 		{
-			//FileValidation  文件标准检测
-			for (const auto& TempFolderName : FolderPathNames)
+			for (const auto& tempchild : ChildrenFolders)
 			{
-				//返回的是文件名（不带后缀）
-				FileValidationOfOneFolder(NotValidFiles, TempFolderName);
-			}
-			if (NotValidFiles.Num())
-				return false;
-			//检查文件依赖 将不合法的资源引用
-
-			//上传资源
-			for (const auto& Tempfilename : localFiles)
-			{
-				bSucceed = FTP_UploadOneFile(Tempfilename);
-				if(!bSucceed)
-					return false;
+				if (!FileValidationOfOneFolder(NameNotValidFiles, tempchild))
+					bAllValid = false;
 			}
 		}
-		break;
-	case EFileType::FILE:
-		bSucceed = FTP_UploadOneFile(localPath);
-		break;
+		else
+		{
+			if (!FileValidationOfOneFolder(NameNotValidFiles, FullPath))
+				bAllValid = false;
+		}
+		//检查文件依赖 提示不合法的资源引用
+		if (!ValidationAllDependenceOfTheFolder(InGamePath, DepenNotValidFiles, bAllValid))
+		{
+			bAllValid = false;
+		}
+		if (!bAllValid)
+		{
+			ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
+			return false;
+		}
+		//上传资源
+		for (const auto& Tempfilename : localFiles)
+		{
+			if (!FTP_UploadOneFile(Tempfilename))
+				return false;
+		}
 	}
-	return bSucceed;
+	else
+		return false;
+	return true;
 }
 
+bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames, TArray<FString>& NameNotValidFiles, TArray<FString>& DepenNotValidFiles)
+{
+	bool bAllValid = true;
+
+	auto GetFolderType = [](FString FolderName)->EFolderType
+	{
+		if (FolderName.Contains(TEXT("_Texture")))
+		{
+			return EFolderType::TEXTURE;
+		}
+		else if (FolderName.Contains(TEXT("_Material")))
+		{
+			return EFolderType::MATERIAL;
+		}
+		else if (FolderName.Contains(TEXT("_Animation")))
+		{
+			return EFolderType::ANIMATION;
+		}
+		else if (FolderName.Contains(TEXT("_SkletalMesh")))
+		{
+			return EFolderType::SKLETALMESH;
+		}
+		else if (FolderName.Contains(TEXT("_StaticMesh")))
+		{
+			return EFolderType::STATICMESH;
+		}
+		else
+		{
+			return EFolderType::ERROR_FOLDER;
+		}
+	};
+	TArray<FString> numArr1; //这两个数组用来判断编号是否有重复  
+	TArray<FString> numArr2;
+	TArray<FString> AssetTypes;
+	FFileHelper::LoadFileToStringArray(AssetTypes, *DataTypeIni);
+	//检查命名
+	for (auto pakname : InPackNames)
+	{
+		FString AssetName, AssetFolderPath;
+		pakname.Split(pakname, &AssetFolderPath, &AssetName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+		FString FolderName = FPaths::GetCleanFilename(AssetFolderPath);
+		EFolderType type = GetFolderType(FolderName);
+		FString UperFileName;
+		TArray<FString> partArr;
+		bool bCorrect = false;
+		switch (type)
+		{
+		case EFolderType::ANIMATION:
+				UperFileName = AssetName.ToUpper();
+				numArr1.Add(AssetName);
+				UperFileName.ParseIntoArray(partArr, TEXT("_"), false); 
+				if (partArr.Num() != 4)
+				{
+					bAllValid = false; 
+					NameNotValidFiles.Add(AssetName);
+					numArr2.Add(FGuid::NewGuid().ToString()); 
+					break;
+				}
+				if (!partArr[0].Equals(TEXT("ANIM")))
+				{
+					bAllValid = false;
+					NameNotValidFiles.Add(AssetName);
+					numArr2.Add(FGuid::NewGuid().ToString());
+					break;
+				}
+				for (const auto& TempAeestType : AssetTypes)
+				{
+					FString UperAssetType = TempAeestType.ToUpper();
+					FString l, r;
+					UperAssetType.Split(TEXT(":"), &l, &r);
+					if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))
+					{
+						break;
+					}
+					else
+					{
+						bCorrect = true;
+						break;
+					}
+				}
+				if (!bCorrect)
+				{
+					bAllValid = false;
+					NameNotValidFiles.Add(AssetName);
+					numArr2.Add(FGuid::NewGuid().ToString());
+					break;
+				}
+				numArr2.AddUnique(partArr[2]);
+				if (numArr1.Num() != numArr2.Num())
+				{
+					bAllValid = false;
+					NameNotValidFiles.Add(AssetName);
+					numArr2.Add(FGuid::NewGuid().ToString());
+				}
+				break;
+		case EFolderType::MATERIAL:
+			//开始判断文件命名是否合法
+			NAME_VALIDATION_ASSET("MAT")
+				break;
+		case EFolderType::SKLETALMESH:
+			//开始判断文件命名是否合法
+			NAME_VALIDATION_ASSET("SKM")
+				break;
+		case EFolderType::STATICMESH:
+			//开始判断文件命名是否合法
+			NAME_VALIDATION_ASSET("STM")
+				break;
+		case EFolderType::TEXTURE:
+			//开始判断文件命名是否合法
+			NAME_VALIDATION_ASSET("TEX")
+				break;
+		default:
+			bAllValid = false;
+			break;
+		}
+	}
+	
+	//检查依赖
+	for (const auto& pakname : InPackNames)
+	{
+		FString PakPath = pakname;
+		TArray<FString> OneAssetDependence;
+		RecursiveFindDependence(pakname, OneAssetDependence);
+
+		FString AssetName = FPaths::GetCleanFilename(pakname);
+		if (PakPath.RemoveFromEnd(TEXT("/") + AssetName))
+		{
+			if (!ValidationDependenceOfOneAsset(PakPath, pakname, OneAssetDependence))
+			{
+				DepenNotValidFiles.Add(pakname);
+				bAllValid = false;
+			}
+		}
+	}
+	if (!bAllValid)
+	{
+		ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
+		return false;
+	}
+	//开始上传文件
+	for (const auto& pakname : InPackNames)
+	{
+		FString FileName = pakname;
+		if (FileName.RemoveFromStart(TEXT("/Game/")))
+		{
+			FileName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FileName);
+			FileName.Append(".uasset");
+			FTP_UploadOneFile(FileName);
+			FString FileDepen = FileName.Replace()
+			FTP_UploadOneFile(FileDepen);
+		}
+	}
 
 
+	return bAllValid;
+}
 
 
 bool FtpClientManager::ftp_test(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences)
 {
-	FindAllDependenceOfTheFolder(InFolderPath, AllDependences);
+	ValidationAllDependenceOfTheFolder(InFolderPath[0], AllDependences,false);
 	return false;
 }
 

@@ -69,6 +69,10 @@ void FSimpleFtpToolModule::StartupModule()
 		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 		TArray<FContentBrowserMenuExtender_SelectedPaths>& ContentBrowserMenuExtender_SelectedPaths = ContentBrowserModule.GetAllPathViewContextMenuExtenders();
 		ContentBrowserMenuExtender_SelectedPaths.Add(FContentBrowserMenuExtender_SelectedPaths::CreateRaw(this, &FSimpleFtpToolModule::OnExtendContentBrowser));
+
+		TArray<FContentBrowserMenuExtender_SelectedAssets>& ContentBrowserMenuExtender_SelectedAssets = ContentBrowserModule.GetAllAssetViewContextMenuExtenders();
+		ContentBrowserMenuExtender_SelectedAssets.Add(FContentBrowserMenuExtender_SelectedAssets::CreateRaw(this, &FSimpleFtpToolModule::OnExtendContentAssetBrowser));
+
 	}
 }
 
@@ -119,11 +123,62 @@ TSharedRef<FExtender> FSimpleFtpToolModule::OnExtendContentBrowser(const TArray<
 
 void FSimpleFtpToolModule::CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths)
 {
-	MenuBuilder.AddMenuEntry(
-		LOCTEXT("CreateInstance", "create an instance folder"),
-		LOCTEXT("CreateInstanceTips", "create an instance folder"),
-		FSlateIcon(),
-		FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::CreateInstanceFolder, NewPaths)));
+	bool bCanSubmit = true;
+	for (const auto& Temp : NewPaths)
+	{
+		if (Temp.Equals("/Game") || Temp.Equals("/Game/Map") || Temp.Equals("/Game/Instance") )
+		{
+			bCanSubmit = false;
+			break;
+		}
+	}
+	MenuBuilder.BeginSection("Custom Menu", LOCTEXT("CustomMenu", "Custom Menu Option"));
+	{
+		if (bCanSubmit)
+		{
+			MenuBuilder.AddMenuEntry(
+				LOCTEXT("Submit", "Submit Source"),
+				LOCTEXT("SubmitTips", "Submit your source."),
+				FSlateIcon(),
+				FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::SubmitSourceUnderTheFolder, NewPaths)));
+		}
+		MenuBuilder.AddMenuEntry(
+			LOCTEXT("CreateInstance", "Create Inst Folder"),
+			LOCTEXT("CreateInstanceTips", "create an instance folder."),
+			FSlateIcon(),
+			FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::CreateInstanceFolder, NewPaths)));
+	}MenuBuilder.EndSection();
+}
+
+TSharedRef<FExtender> FSimpleFtpToolModule::OnExtendContentAssetBrowser(const TArray<FAssetData>& NewAssetPaths)
+{
+	TArray<FString> NewPaths;
+	TSharedRef<FExtender> Extender(new FExtender);
+	for (const auto& Temp : NewAssetPaths)
+	{
+		if (Temp.AssetClass != "World")
+		{
+			NewPaths.Add(Temp.PackageName.ToString());
+		}
+		else
+		{
+			return Extender;
+		}
+	}
+	Extender->AddMenuExtension("AssetContextReferences", EExtensionHook::After, nullptr, FMenuExtensionDelegate::CreateRaw(this, &FSimpleFtpToolModule::CreateSubMenuForAssetBrowser, NewPaths));
+	return Extender;
+}
+
+void FSimpleFtpToolModule::CreateSubMenuForAssetBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths)
+{
+	MenuBuilder.BeginSection("Custom Menu", LOCTEXT("CustomMenu", "Custom Menu Option"));
+	{
+		MenuBuilder.AddMenuEntry(
+			LOCTEXT("Submit", "Submit Asset"),
+			LOCTEXT("SubmitTips", "Submit your assets."),
+			FSlateIcon(),
+			FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::SubmitSelectedSource, NewPaths)));
+	}MenuBuilder.EndSection();
 }
 
 void FSimpleFtpToolModule::CreateInstanceFolder(TArray<FString> NewPaths)
@@ -138,8 +193,24 @@ void FSimpleFtpToolModule::CreateInstanceFolder(TArray<FString> NewPaths)
 		FMessageDialog::Open(EAppMsgType::Ok, DialogText);
 		return;
 	}
-	
 	FTP_INSTANCE->CreateInstanceFolder(InsName);
+}
+
+void FSimpleFtpToolModule::SubmitSourceUnderTheFolder(TArray<FString> NewPaths)
+{
+	TArray<FString> NameNotValidFiles;
+	TArray<FString> DepenNotValidFiles;
+	for (const auto& Temp : NewPaths)
+	{
+		FTP_INSTANCE->FTP_UploadFilesByFolder(Temp, NameNotValidFiles, DepenNotValidFiles);
+	}
+}
+
+void FSimpleFtpToolModule::SubmitSelectedSource(TArray<FString> NewPaths)
+{
+	TArray<FString> NameNotValidFiles;
+	TArray<FString> DepenNotValidFiles;
+	FTP_INSTANCE->FTP_UploadFilesByAsset(NewPaths, NameNotValidFiles, DepenNotValidFiles);
 }
 
 void FSimpleFtpToolModule::PluginButtonClicked()

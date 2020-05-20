@@ -45,9 +45,9 @@ bool Aue4_FTPGameModeBase::FTP_List(const FString& serverPath, TArray<FString>& 
 	return FTP_INSTANCE->FTP_ListFile(serverPath,OutFiles);
 }
 
-bool Aue4_FTPGameModeBase::FTP_UploadFiles(const FString& localPath, TArray<FString>& NotValidFiles)
+bool Aue4_FTPGameModeBase::FTP_UploadFiles(const FString& localPath, TArray<FString>& NotValidFiles, TArray<FString>& DepeNotValidFiles)
 {
-	return FTP_INSTANCE->FTP_UploadFiles(localPath, NotValidFiles);
+	return FTP_INSTANCE->FTP_UploadFilesByFolder(localPath, NotValidFiles, DepeNotValidFiles);
 }
 
 bool Aue4_FTPGameModeBase::TEST_Function(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences)

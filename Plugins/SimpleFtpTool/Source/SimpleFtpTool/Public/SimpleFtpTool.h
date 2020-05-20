@@ -27,13 +27,22 @@ private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 
 private:
-	//自定义菜单
+	//自定义菜单 文件夹
 	TSharedRef<FExtender> OnExtendContentBrowser(const TArray<FString>& NewPaths);
 	void CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths);  //不能传引用，只能内存拷贝
 
+	//自定义菜单 资源
+	TSharedRef<FExtender> OnExtendContentAssetBrowser(const TArray<FAssetData>& NewAssetPaths);
+	void CreateSubMenuForAssetBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths);  //不能传引用，只能内存拷贝
+
+
 private:
-	//自定义菜单按钮点击事件
+	//自定义菜单按钮点击事件 (创建实例文件夹)
 	void CreateInstanceFolder(TArray<FString> NewPaths);
+	//自定义菜单按钮点击事件 （提交文件夹下的资源）
+	void SubmitSourceUnderTheFolder(TArray<FString> NewPaths);
+	//自定义菜单按钮点击事件 （提交选中的资源）
+	void SubmitSelectedSource(TArray<FString> NewPaths);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
