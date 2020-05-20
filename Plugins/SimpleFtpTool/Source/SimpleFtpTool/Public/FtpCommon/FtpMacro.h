@@ -59,6 +59,53 @@ for (const auto& TempName : AllFileNames)\
 	}\
 }
 
-#define NAME_VALIDATION_ASSET(Prefix)\
 
+#define NAME_VALIDATION_ASSET(Prefix)\
+UperFileName = AssetName.ToUpper();\
+numArr1.Add(AssetName);\
+UperFileName.ParseIntoArray(partArr, TEXT("_"), false);\
+if (partArr.Num() != 4)\
+{\
+	bAllValid = false;\
+	NameNotValidFiles.Add(AssetName);\
+	numArr2.Add(FGuid::NewGuid().ToString());\
+	continue;\
+}\
+if (!partArr[0].Equals(TEXT(##Prefix)))\
+{\
+	bAllValid = false;\
+	NameNotValidFiles.Add(AssetName);\
+	numArr2.Add(FGuid::NewGuid().ToString());\
+	continue;\
+}\
+for (const auto& TempAeestType : AssetTypes)\
+{\
+	FString UperAssetType = TempAeestType.ToUpper();\
+	FString l, r;\
+	UperAssetType.Split(TEXT(":"), &l, &r);\
+	if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))\
+	{\
+		continue;\
+	}\
+	else\
+	{\
+		bCorrect = true;\
+		continue;\
+	}\
+}\
+if (!bCorrect)\
+{\
+	bAllValid = false;\
+	NameNotValidFiles.Add(AssetName);\
+	numArr2.Add(FGuid::NewGuid().ToString());\
+	continue;\
+}\
+numArr2.AddUnique(partArr[2]);\
+if (numArr1.Num() != numArr2.Num())\
+{\
+	bAllValid = false;\
+	NameNotValidFiles.Add(AssetName);\
+	numArr2.Add(FGuid::NewGuid().ToString());\
+}\
+break
 

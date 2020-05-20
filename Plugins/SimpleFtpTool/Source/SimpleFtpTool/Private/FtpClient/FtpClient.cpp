@@ -1097,7 +1097,7 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 	for (auto pakname : InPackNames)
 	{
 		FString AssetName, AssetFolderPath;
-		pakname.Split(pakname, &AssetFolderPath, &AssetName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+		pakname.Split(TEXT("/"), &AssetFolderPath, &AssetName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
 		FString FolderName = FPaths::GetCleanFilename(AssetFolderPath);
 		EFolderType type = GetFolderType(FolderName);
 		FString UperFileName;
@@ -1106,75 +1106,24 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		switch (type)
 		{
 		case EFolderType::ANIMATION:
-				UperFileName = AssetName.ToUpper();
-				numArr1.Add(AssetName);
-				UperFileName.ParseIntoArray(partArr, TEXT("_"), false); 
-				if (partArr.Num() != 4)
-				{
-					bAllValid = false; 
-					NameNotValidFiles.Add(AssetName);
-					numArr2.Add(FGuid::NewGuid().ToString()); 
-					break;
-				}
-				if (!partArr[0].Equals(TEXT("ANIM")))
-				{
-					bAllValid = false;
-					NameNotValidFiles.Add(AssetName);
-					numArr2.Add(FGuid::NewGuid().ToString());
-					break;
-				}
-				for (const auto& TempAeestType : AssetTypes)
-				{
-					FString UperAssetType = TempAeestType.ToUpper();
-					FString l, r;
-					UperAssetType.Split(TEXT(":"), &l, &r);
-					if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))
-					{
-						break;
-					}
-					else
-					{
-						bCorrect = true;
-						break;
-					}
-				}
-				if (!bCorrect)
-				{
-					bAllValid = false;
-					NameNotValidFiles.Add(AssetName);
-					numArr2.Add(FGuid::NewGuid().ToString());
-					break;
-				}
-				numArr2.AddUnique(partArr[2]);
-				if (numArr1.Num() != numArr2.Num())
-				{
-					bAllValid = false;
-					NameNotValidFiles.Add(AssetName);
-					numArr2.Add(FGuid::NewGuid().ToString());
-				}
-				break;
+			NAME_VALIDATION_ASSET("ANIM");
 		case EFolderType::MATERIAL:
 			//开始判断文件命名是否合法
-			NAME_VALIDATION_ASSET("MAT")
-				break;
+			NAME_VALIDATION_ASSET("MAT");
 		case EFolderType::SKLETALMESH:
 			//开始判断文件命名是否合法
-			NAME_VALIDATION_ASSET("SKM")
-				break;
+			NAME_VALIDATION_ASSET("SKM");
 		case EFolderType::STATICMESH:
 			//开始判断文件命名是否合法
-			NAME_VALIDATION_ASSET("STM")
-				break;
+			NAME_VALIDATION_ASSET("STM");
 		case EFolderType::TEXTURE:
 			//开始判断文件命名是否合法
-			NAME_VALIDATION_ASSET("TEX")
-				break;
+			NAME_VALIDATION_ASSET("TEX");
 		default:
 			bAllValid = false;
 			break;
 		}
 	}
-	
 	//检查依赖
 	for (const auto& pakname : InPackNames)
 	{
@@ -1205,16 +1154,18 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		{
 			FileName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FileName);
 			FileName.Append(".uasset");
-			FTP_UploadOneFile(FileName);
-			FString FileDepen = FileName.Replace()
-			FTP_UploadOneFile(FileDepen);
+			if(!FTP_UploadOneFile(FileName))
+			{
+				return false;
+			}
+			FileName.ReplaceInline(TEXT("uasset"),TEXT("dep"));
+			if(IFileManager::Get().FileExists(*FileName))
+				if(!FTP_UploadOneFile(FileName))
+					return false;
 		}
 	}
-
-
 	return bAllValid;
 }
-
 
 bool FtpClientManager::ftp_test(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences)
 {
