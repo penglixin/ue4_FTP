@@ -2,6 +2,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "FtpTypes.generated.h"
+
 
 UENUM(BlueprintType)
 enum class EFtpCommandType : uint8
@@ -58,3 +60,39 @@ enum class EFolderType : uint8
 	SKLETALMESH,
 	ERROR_FOLDER
 };
+
+
+
+
+USTRUCT(BlueprintType)
+struct FDataTypeInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+	FString TYPENAME;
+
+	FString TYPEABBR;
+
+	FString TYPEDESCRIPTION;
+
+};
+
+USTRUCT(BlueprintType)
+struct FDataInfoList
+{
+	GENERATED_USTRUCT_BODY()
+
+	FString FILEEDESCRIPTION;
+
+	TArray<FDataTypeInfo> DATATYPRARR;
+
+};
+
+
+typedef FDataInfoList DataList;
+
+namespace SimpleDataType
+{
+	void ConvertStructToString(const DataList& TypeArr, FString& Json);
+	bool ConvertStringToStruct(const FString& Json, DataList& TypeArr);
+}

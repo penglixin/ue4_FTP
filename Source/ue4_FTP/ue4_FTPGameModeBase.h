@@ -45,11 +45,12 @@ public:
 		 * ²âÊÔº¯Êý
 		 */
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
-		bool TEST_Function(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences);
+		bool TEST_Function(const FString& InFolderPath);
 
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
 		bool MoveFile(const FString& to, const FString& from, bool bReplace);
 
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
 		int32 CopyFile(const FString& to, const FString& from, bool bReplace);
+
 };

@@ -44,7 +44,7 @@ public:
 	//根据PackageName上传资源
 	bool FTP_UploadFilesByAsset(const TArray<FString>& InPackNames, TArray<FString>& NameNotValidFiles, TArray<FString>& DepenNotValidFiles);
 
-	bool ftp_test(const TArray<FString>& InFolderPath, TArray<FString>& AllDependences);
+	bool ftp_test(const FString& InFolderPath);
 
 private:
 	//接受服务端返回的消息
@@ -64,7 +64,7 @@ private:
 	//列举路径下的所有文件(绝对路径)
 	bool GetAllFileFromLocalPath(const FString& localPath, TArray<FString>& AllFiles, bool bRecursively = true); 
 	//创建文件夹
-	bool CreateDir(const FString& InDir);
+	bool CreateDirByAsssetPath(const FString& InAssetFullPath);
 	//删除文件夹里面所有内容
 	bool DeleteFileOrFolder(const FString& InDir);
 	//检测单个文件夹下的文件命名是否合法
@@ -75,7 +75,8 @@ private:
 	bool ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence);
 	//检查一个文件夹下的所有资源的所有依赖
 	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FString>& NotValidDependences, bool bAllNameValid = false);
-	
+	//
+
 private:
 	//Debug
 	void Print(const FString& Mesg, float Time = 100.f, FColor Color = FColor::Yellow);
@@ -83,14 +84,11 @@ private:
 	void ShowMessageBox(const TArray<FString>& NameNotValidFiles, const TArray<FString>& DepenNotValidFiles);
 private:
 	static FtpClientManager* ftpInstance;
-	int32 ResponseCode; //服务器响应码
-	//控制连接 :一直保持连接直到程序结束，或者服务器关闭
-	FSocket* controlSocket;
-	//数据连接： 在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
-	FSocket* dataSocket;
+	int32 ResponseCode;		//服务器响应码
+	FSocket* controlSocket;		//控制连接 :一直保持连接直到程序结束，或者服务器关闭
+	FSocket* dataSocket;		//数据连接： 在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
 	FIPv4Address ipAddr;
-
-
+	
 private:
 	FString DataTypeIni;
 };

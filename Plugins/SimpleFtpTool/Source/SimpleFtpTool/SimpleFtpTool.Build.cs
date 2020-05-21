@@ -30,7 +30,8 @@ public class SimpleFtpTool : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
                 "Sockets",
                 "Networking",
-                "AssetRegistry"
+                "AssetRegistry",
+                "Json"
             }
 			);
 			

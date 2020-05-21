@@ -28,12 +28,9 @@ for (const auto& TempName : AllFileNames)\
 		continue;\
 	}\
 	bool bCorrect = false;\
-	for (const auto& TempAeestType : AssetTypes)\
+	for (const auto& TempAeestType : InfoList.DATATYPRARR)\
 	{\
-		FString UperAssetType = TempAeestType.ToUpper();\
-		FString l, r;\
-		UperAssetType.Split(TEXT(":"), &l, &r);\
-		if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))\
+		if (!(partArr[1].Equals(TempAeestType.TYPENAME)) && !(partArr[1].Equals(TempAeestType.TYPEABBR)))\
 		{\
 			continue;\
 		}\
@@ -61,7 +58,7 @@ for (const auto& TempName : AllFileNames)\
 
 
 #define NAME_VALIDATION_ASSET(Prefix)\
-UperFileName = AssetName.ToUpper();\
+UperFileName = AssetName.ToUpper(); \
 numArr1.Add(AssetName);\
 UperFileName.ParseIntoArray(partArr, TEXT("_"), false);\
 if (partArr.Num() != 4)\
@@ -78,12 +75,9 @@ if (!partArr[0].Equals(TEXT(##Prefix)))\
 	numArr2.Add(FGuid::NewGuid().ToString());\
 	continue;\
 }\
-for (const auto& TempAeestType : AssetTypes)\
+for (const auto& TempAeestType : InfoList.DATATYPRARR)\
 {\
-	FString UperAssetType = TempAeestType.ToUpper();\
-	FString l, r;\
-	UperAssetType.Split(TEXT(":"), &l, &r);\
-	if (!(partArr[1].Equals(l)) && !(partArr[1].Equals(r)))\
+	if (!(partArr[1].Equals(TempAeestType.TYPEABBR)) && !(partArr[1].Equals(TempAeestType.TYPENAME)))\
 	{\
 		continue;\
 	}\
@@ -108,4 +102,3 @@ if (numArr1.Num() != numArr2.Num())\
 	numArr2.Add(FGuid::NewGuid().ToString());\
 }\
 break
-
