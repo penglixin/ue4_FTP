@@ -137,10 +137,16 @@ void FSimpleFtpToolModule::CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuil
 		if (bCanSubmit)
 		{
 			MenuBuilder.AddMenuEntry(
-				LOCTEXT("Submit", "Submit Source"),
+				LOCTEXT("Submit", "Submit Sources"),
 				LOCTEXT("SubmitTips", "Submit your source."),
 				FSlateIcon(),
 				FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::SubmitSourceUnderTheFolder, NewPaths)));
+
+			MenuBuilder.AddMenuEntry(
+				LOCTEXT("GenerateDepend", "Check Name Generate Dependency"),
+				LOCTEXT("GenerateDependTips", "Generate dependency file under the folder."),
+				FSlateIcon(),
+				FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::CheckNameAndGenerateDependencyFiles, NewPaths)));
 		}
 		MenuBuilder.AddMenuEntry(
 			LOCTEXT("CreateInstance", "Create Inst Folder"),
@@ -204,6 +210,26 @@ void FSimpleFtpToolModule::SubmitSourceUnderTheFolder(TArray<FString> NewPaths)
 	{
 		FTP_INSTANCE->FTP_UploadFilesByFolder(Temp, NameNotValidFiles, DepenNotValidFiles);
 	}
+}
+
+void FSimpleFtpToolModule::CheckNameAndGenerateDependencyFiles(TArray<FString> NewPaths)
+{	
+	TArray<FString> NameNotValid;
+	TArray<FString> DepenNotValidFiles;
+	bool bAllNameValid = true;
+	for (const auto& temp : NewPaths)
+	{
+		FString CopyTemp = temp;
+		CopyTemp.RemoveFromStart(TEXT("/Game/"));
+		FString FullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / CopyTemp);
+		if(!FTP_INSTANCE->FileValidationOfOneFolder(NameNotValid, FullPath))
+		bAllNameValid = false;
+	}
+	for(const auto& temp : NewPaths)
+	{
+		FTP_INSTANCE->ValidationAllDependenceOfTheFolder(temp,DepenNotValidFiles, bAllNameValid);
+	}
+	FTP_INSTANCE->ShowMessageBox(NameNotValid, DepenNotValidFiles);
 }
 
 void FSimpleFtpToolModule::SubmitSelectedSource(TArray<FString> NewPaths)

@@ -46,6 +46,22 @@ public:
 
 	bool ftp_test(const FString& InFolderPath);
 
+public:
+	//列举路径下的所有文件(绝对路径)
+	bool GetAllFileFromLocalPath(const FString& localPath, TArray<FString>& AllFiles, bool bRecursively = true);
+	//创建文件夹
+	bool CreateDirByAsssetPath(const FString& InAssetFullPath);
+	//删除文件夹里面所有内容
+	bool DeleteFileOrFolder(const FString& InDir);
+	//检测单个文件夹下的文件命名是否合法
+	bool FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFullFolderPath);
+	//寻找一个资源的所有依赖
+	void RecursiveFindDependence(const FString& InPackageName, TArray<FString>& AllDependence);
+	//检查一个资源的所有依赖是否合法
+	bool ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence, bool bAllNameValid);
+	//检查一个文件夹下的所有资源的所有依赖
+	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FString>& NotValidDependences, bool bAllNameValid = false);
+
 private:
 	//接受服务端返回的消息
 	bool ReceiveData(FSocket* sock, FString& RecvMesg, TArray<uint8>& dataArray, bool bSleep = true);
@@ -61,26 +77,13 @@ private:
 	int32 SendPASVCommand();
 	//判断传入的serverPath是文件 还是 文件夹
 	EFileType JudgeserverPath(const FString& InserverPath);
-	//列举路径下的所有文件(绝对路径)
-	bool GetAllFileFromLocalPath(const FString& localPath, TArray<FString>& AllFiles, bool bRecursively = true); 
-	//创建文件夹
-	bool CreateDirByAsssetPath(const FString& InAssetFullPath);
-	//删除文件夹里面所有内容
-	bool DeleteFileOrFolder(const FString& InDir);
-	//检测单个文件夹下的文件命名是否合法
-	bool FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFullFolderPath);
-	//寻找一个资源的所有依赖
-	void RecursiveFindDependence(const FString& InPackageName, TArray<FString>& AllDependence);
-	//检查一个资源的所有依赖是否合法
-	bool ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence);
-	//检查一个文件夹下的所有资源的所有依赖
-	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FString>& NotValidDependences, bool bAllNameValid = false);
-	//
+	
 
 private:
 	//Debug
 	void Print(const FString& Mesg, float Time = 100.f, FColor Color = FColor::Yellow);
 	void Print(const TArray<uint8>& dataArray, float Time = 100.f, FColor Color = FColor::Purple);
+public:
 	void ShowMessageBox(const TArray<FString>& NameNotValidFiles, const TArray<FString>& DepenNotValidFiles);
 private:
 	static FtpClientManager* ftpInstance;

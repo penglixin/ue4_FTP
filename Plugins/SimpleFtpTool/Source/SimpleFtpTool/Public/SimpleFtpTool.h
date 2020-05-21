@@ -41,6 +41,9 @@ private:
 	void CreateInstanceFolder(TArray<FString> NewPaths);
 	//自定义菜单按钮点击事件 （提交文件夹下的资源）
 	void SubmitSourceUnderTheFolder(TArray<FString> NewPaths);
+	//为文件夹下的资源生成依赖文件
+	void CheckNameAndGenerateDependencyFiles(TArray<FString> NewPaths);
+
 	//自定义菜单按钮点击事件 （提交选中的资源）
 	void SubmitSelectedSource(TArray<FString> NewPaths);
 

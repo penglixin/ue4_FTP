@@ -12,6 +12,8 @@ UFtpConfig::UFtpConfig()
 
 	ServerPort = 21;
 
+	Suffix = TEXT(".dep");
+
 	InsProjectName = TEXT("ProjOne");
 }
 

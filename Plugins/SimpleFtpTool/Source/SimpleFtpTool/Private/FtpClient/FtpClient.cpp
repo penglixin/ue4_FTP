@@ -654,7 +654,7 @@ void FtpClientManager::RecursiveFindDependence(const FString& InPackageName, TAr
 	}
 }
 
-bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence)
+bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence, bool bAllNameValid)
 {
 	bool bValid = true;
 	//公共资源依赖检查
@@ -702,13 +702,13 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 		}
 	}
 	//保存依赖文件
-	if (bValid)
+	if (bAllNameValid)
 	{
 		FString FileName = AssetPackName;
 		FString contentName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
 		if (FileName.ReplaceInline(TEXT("/Game/"), *contentName))
 		{
-			FileName.Append(TEXT(".dep"));
+			FileName.Append(GetDefault<UFtpConfig>()->Suffix);
 			FFileHelper::SaveStringArrayToFile(TheAssetDependence, *FileName);
 		}
 	}
@@ -718,7 +718,7 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 //这边传入的路径都是相对路径   如：/Game/Instance/ProjA    找到的依赖都是 PackageName
 bool FtpClientManager::ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FString>& NotValidDependences, bool bAllNameValid)
 {
-	bool bAllValid = true;
+	bool bAllDependenceValid = true;
 	FString CopyTemp = InGamePath;
 	TArray<FString> AllDependences;
 	//先把相对路径转化成绝对路径 
@@ -745,26 +745,20 @@ bool FtpClientManager::ValidationAllDependenceOfTheFolder(const FString& InGameP
 				AllDependences.AddUnique(temp);
 			}
 			//检查该资源的依赖是否合法
-			if (!ValidationDependenceOfOneAsset(InGamePath, PackageName, TheAssetDependence))
+			if (!ValidationDependenceOfOneAsset(InGamePath, PackageName, TheAssetDependence, bAllNameValid))
 			{
 				NotValidDependences.Add(PackageName);
-				bAllValid = false;
-			}
-			if (bAllNameValid)
-			{
-				//当所有资源的命名都合法 才把该资源所有的依赖保存成一个文件 
-				PackageName = Tempasset.Replace(TEXT(".uasset"), TEXT(".dep"));
-				FFileHelper::SaveStringArrayToFile(TheAssetDependence, *PackageName);
+				bAllDependenceValid = false;
 			}
 		}
 	}
 	else
-		bAllValid = false;
+		bAllDependenceValid = false;
 
 	//保存一份文件夹下所有文件的依赖
-	//FString InstName = FPaths::GetCleanFilename(InGamePath) + TEXT(".dep");
+	//FString InstName = FPaths::GetCleanFilename(InGamePath) + GetDefault<UFtpConfig>()->Suffix;
 	//FFileHelper::SaveStringArrayToFile(AllDependences, *(CopyTemp / InstName));
-	return bAllValid;
+	return bAllDependenceValid;
 }
 
 
@@ -1044,35 +1038,35 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 	{
 		FullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FullPath);
 	}
+	bool bAllValid = true;
+	TArray<FString> ChildrenFolders;
+	IFileManager::Get().FindFilesRecursive(ChildrenFolders, *FullPath, TEXT("*"), false, true);
+	if (ChildrenFolders.Num())
+	{
+		for (const auto& tempchild : ChildrenFolders)
+		{
+			if (!FileValidationOfOneFolder(NameNotValidFiles, tempchild))
+				bAllValid = false;
+		}
+	}
+	else
+	{
+		if (!FileValidationOfOneFolder(NameNotValidFiles, FullPath))
+			bAllValid = false;
+	}
+	//检查文件依赖 提示不合法的资源引用
+	if (!ValidationAllDependenceOfTheFolder(InGamePath, DepenNotValidFiles, bAllValid))
+	{
+		bAllValid = false;
+	}
+	if (!bAllValid)
+	{
+		ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
+		return false;
+	}
 	TArray<FString> localFiles;  //本地路径下的所有文件
 	if (GetAllFileFromLocalPath(FullPath, localFiles))
 	{
-		bool bAllValid = true;
-		TArray<FString> ChildrenFolders;
-		IFileManager::Get().FindFilesRecursive(ChildrenFolders, *FullPath, TEXT("*"), false, true);
-		if (ChildrenFolders.Num())
-		{
-			for (const auto& tempchild : ChildrenFolders)
-			{
-				if (!FileValidationOfOneFolder(NameNotValidFiles, tempchild))
-					bAllValid = false;
-			}
-		}
-		else
-		{
-			if (!FileValidationOfOneFolder(NameNotValidFiles, FullPath))
-				bAllValid = false;
-		}
-		//检查文件依赖 提示不合法的资源引用
-		if (!ValidationAllDependenceOfTheFolder(InGamePath, DepenNotValidFiles, bAllValid))
-		{
-			bAllValid = false;
-		}
-		if (!bAllValid)
-		{
-			ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
-			return false;
-		}
 		//上传资源
 		for (const auto& Tempfilename : localFiles)
 		{
@@ -1080,8 +1074,8 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 				return false;
 		}
 	}
-	else
-		return false;
+	//上传依赖
+
 	return true;
 }
 
@@ -1210,7 +1204,7 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		FString AssetName = FPaths::GetCleanFilename(pakname);
 		if (PakPath.RemoveFromEnd(TEXT("/") + AssetName))
 		{
-			if (!ValidationDependenceOfOneAsset(PakPath, pakname, OneAssetDependence))
+			if (!ValidationDependenceOfOneAsset(PakPath, pakname, OneAssetDependence, bAllValid))
 			{
 				DepenNotValidFiles.Add(pakname);
 				bAllValid = false;
@@ -1222,7 +1216,6 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
 		return false;
 	}
-
 	//开始上传文件,先找到所有合法依赖
 	TArray<FString> PackName = InPackNames;
 	for (const auto& pakname : InPackNames)
@@ -1231,7 +1224,7 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		if (FileName.RemoveFromStart(TEXT("/Game/")))
 		{
 			FileName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FileName);
-			FileName.Append(".dep");
+			FileName.Append(GetDefault<UFtpConfig>()->Suffix);
 			TArray<FString> dependences;
 			FFileHelper::LoadFileToStringArray(dependences, *FileName);
 			for (const auto& tempdep : dependences)
@@ -1239,7 +1232,7 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 				PackName.AddUnique(tempdep);
 			}
 		}
-	}	
+	}
 	for (const auto& pakname : PackName)
 	{
 		FString FileName = pakname;
@@ -1251,7 +1244,8 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 			{
 				return false;
 			}
-			FileName.ReplaceInline(TEXT("uasset"),TEXT("dep"));
+			FString Suffix = GetDefault<UFtpConfig>()->Suffix;
+			FileName.ReplaceInline(TEXT(".uasset"), *Suffix);
 			if(IFileManager::Get().FileExists(*FileName))
 				if(!FTP_UploadOneFile(FileName))
 					return false;
