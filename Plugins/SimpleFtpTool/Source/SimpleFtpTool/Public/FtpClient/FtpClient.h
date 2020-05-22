@@ -21,7 +21,7 @@ public:
 	void Initialize_Folder();
 	//创建实例文件夹
 	void CreateInstanceFolder(const FString& InstanceName);
-	void ShowMessageBox(const TArray<FString>& NameNotValidFiles, const TArray<FString>& DepenNotValidFiles);
+	void ShowMessageBox(const TArray<FString>& NameNotValidFiles, const TArray<FInvalidDepInfo>& DepenNotValidFiles);
 
 
 public:
@@ -42,9 +42,9 @@ public:
 	//上传单个文件
 	bool FTP_UploadOneFile(const FString& localFileName);
 	//上传文件夹里的所有文件
-	bool FTP_UploadFilesByFolder(const FString& InGamePath, TArray<FString>& NameNotValidFiles, TArray<FString>& DepenNotValidFiles);
+	bool FTP_UploadFilesByFolder(const FString& InGamePath, TArray<FString>& NameNotValidFiles, TArray<FInvalidDepInfo>& DepenNotValidFiles);
 	//根据PackageName上传资源
-	bool FTP_UploadFilesByAsset(const TArray<FString>& InPackNames, TArray<FString>& NameNotValidFiles, TArray<FString>& DepenNotValidFiles);
+	bool FTP_UploadFilesByAsset(const TArray<FString>& InPackNames, TArray<FString>& NameNotValidFiles, TArray<FInvalidDepInfo>& DepenNotValidFiles);
 
 	bool ftp_test(const FString& InFolderPath);
 
@@ -60,9 +60,9 @@ public:
 	//寻找一个资源的所有依赖
 	void RecursiveFindDependence(const FString& InPackageName, TArray<FString>& AllDependence);
 	//检查一个资源的所有依赖是否合法
-	bool ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence, bool bAllNameValid);
+	bool ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence, FInvalidDepInfo& InvalidInfo, bool bAllNameValid);
 	//检查一个文件夹下的所有资源的所有依赖
-	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FString>& NotValidDependences, bool bAllNameValid = false);
+	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FInvalidDepInfo>& NotValidDependences, bool bAllNameValid = false);
 	//上传文件以及依赖文件 传入资源的PackageName数组
 	bool UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames);
 

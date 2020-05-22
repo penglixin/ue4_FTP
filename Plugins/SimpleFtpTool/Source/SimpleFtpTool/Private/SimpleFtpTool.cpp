@@ -215,7 +215,7 @@ void FSimpleFtpToolModule::CreateInstanceFolder(TArray<FString> NewPaths)
 void FSimpleFtpToolModule::SubmitSourceUnderTheFolder(TArray<FString> NewPaths)
 {
 	TArray<FString> NameNotValidFiles;
-	TArray<FString> DepenNotValidFiles;
+	TArray<FInvalidDepInfo> DepenNotValidFiles;
 	bool bUploadSuccess = true;
 	FString FolderStr;
 	for (const auto& Temp : NewPaths)
@@ -237,7 +237,7 @@ void FSimpleFtpToolModule::SubmitSourceUnderTheFolder(TArray<FString> NewPaths)
 void FSimpleFtpToolModule::CheckNameAndGenerateDependencyFiles(TArray<FString> NewPaths)
 {	
 	TArray<FString> NameNotValid;
-	TArray<FString> DepenNotValidFiles;
+	TArray<FInvalidDepInfo> DepenNotValidFiles;
 	bool bAllNameValid = true;
 	for (const auto& temp : NewPaths)
 	{
@@ -270,7 +270,7 @@ void FSimpleFtpToolModule::CheckNameAndGenerateDependencyFiles(TArray<FString> N
 void FSimpleFtpToolModule::SubmitSelectedSource(TArray<FString> NewPaths)
 {
 	TArray<FString> NameNotValidFiles;
-	TArray<FString> DepenNotValidFiles;
+	TArray<FInvalidDepInfo> DepenNotValidFiles;
 	FTP_INSTANCE->FTP_UploadFilesByAsset(NewPaths, NameNotValidFiles, DepenNotValidFiles);
 }
 

@@ -94,6 +94,8 @@ struct FDataInfoList
 
 };
 
+
+
 USTRUCT(BlueprintType)
 struct FDependenceInfo
 {
@@ -119,6 +121,19 @@ struct FDependenList
 		TArray<FDependenceInfo> DepenArr;
 };
 
+
+//不合法依赖   都是PackageName类型
+USTRUCT(BlueprintType)
+struct FInvalidDepInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		FString DepInvalidAssetName;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		TArray<FString> InvalidDepAsset;
+};
 
 //实例配置文件信息
 USTRUCT(BlueprintType)
