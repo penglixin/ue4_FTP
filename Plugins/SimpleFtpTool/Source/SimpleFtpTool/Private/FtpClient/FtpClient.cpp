@@ -1,7 +1,6 @@
 #include "FtpClient/FtpClient.h"
 #include "Engine.h"
 #include "Misc/Paths.h"
-//#include "Misc/App.h"
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformFilemanager.h"
@@ -42,6 +41,28 @@ void FtpClientManager::Print(const TArray<uint8>& dataArray, float Time, FColor 
 	{
 
 		GEngine->AddOnScreenDebugMessage(-1, Time, Color, BinaryArrayToString(dataArray));
+	}
+}
+
+void FtpClientManager::DeleteUselessFile()
+{
+	FString ProjContent = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+	TArray<FString> AllFiles;
+	FString Suffix = TEXT("*") + GetDefault<UFtpConfig>()->Suffix;
+	IFileManager::Get().FindFilesRecursive(AllFiles, *ProjContent, *Suffix, true, false);
+	for (const auto& temp : AllFiles)
+	{
+		FString Copyfile = temp.Replace(*(GetDefault<UFtpConfig>()->Suffix), TEXT(".uasset"));
+		if (!IFileManager::Get().FileExists(*Copyfile))
+		{
+			FString FileName = FPaths::GetCleanFilename(Copyfile);  // xxx.uasset
+			Copyfile.RemoveFromEnd(TEXT("/") + FileName);
+			FileName.RemoveFromEnd(TEXT(".uasset"));  // xxx
+			FString LastFolderName = FPaths::GetCleanFilename(Copyfile);
+
+			if(!FileName.Equals(LastFolderName))
+				IFileManager::Get().Delete(*temp);
+		}
 	}
 }
 
@@ -168,6 +189,7 @@ void FtpClientManager::CreateInstanceFolder(const FString& InstanceName)
 	if (!filePlatform.DirectoryExists(*InstanceANI))
 		filePlatform.CreateDirectory(*InstanceANI);
 }
+
 
 /******************************************************************************/
 /******************************************************************************/
@@ -492,7 +514,7 @@ bool FtpClientManager::DeleteFileOrFolder(const FString& InDir)
 	return bSuccessed;
 }
 
-bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFullFolderPath)
+bool FtpClientManager::FileNameValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFullFolderPath)
 {
 	bool bAllValid = true;
 	auto GetFolderType = [](FString InPath)->EFolderType
@@ -532,7 +554,7 @@ bool FtpClientManager::FileValidationOfOneFolder(TArray<FString>& NoValidFiles, 
 	TArray<FString> numArr2;
 
 	FString JsonStr;
-	DataList InfoList;
+	FDataInfoList InfoList;
 	FFileHelper::LoadFileToString(JsonStr, *DataTypeIni);
 	JsonStr.ToUpperInline();
 	if (!SimpleDataType::ConvertStringToStruct(JsonStr, InfoList))
@@ -701,7 +723,7 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 			}
 		}
 	}
-	//保存依赖文件
+	//保存依赖文件  Json格式，并且为每一个依赖资源生成一个32位校验码  就算存在不合法的依赖也会生成依赖文件
 	if (bAllNameValid)
 	{
 		FString FileName = AssetPackName;
@@ -709,7 +731,18 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 		if (FileName.ReplaceInline(TEXT("/Game/"), *contentName))
 		{
 			FileName.Append(GetDefault<UFtpConfig>()->Suffix);
-			FFileHelper::SaveStringArrayToFile(TheAssetDependence, *FileName);
+			FDependenList depenlist;
+			depenlist.SourceAssetName = AssetPackName;
+			for (const auto& temp : TheAssetDependence)
+			{
+				FDependenceInfo OneInfo;
+				OneInfo.DepenAssetPackName = temp;
+				OneInfo.ValidCode = FGuid::NewGuid().ToString();
+				depenlist.DepenArr.Add(OneInfo);
+			}
+			FString Json;
+			SimpleDataType::ConvertStructToString(depenlist, Json);
+			FFileHelper::SaveStringToFile(Json, *FileName);
 		}
 	}
 	return bValid;
@@ -754,10 +787,33 @@ bool FtpClientManager::ValidationAllDependenceOfTheFolder(const FString& InGameP
 	}
 	else
 		bAllDependenceValid = false;
+	
+	//如果上传的是实例文件夹，则把实例中所有引用到的common文件夹资源保存到 ProjA.dep
+	{
+		if (InGamePath.Contains(TEXT("/Instance/")))
+		{
+			FString InstName = FPaths::GetCleanFilename(InGamePath);
+			FString InstConfigName = CopyTemp / InstName + GetDefault<UFtpConfig>()->Suffix;
+			FInstanceInfo InstInfo;
+			InstInfo.InstValidCode = FGuid::NewGuid().ToString();
+			for (const auto& temp : AllDependences)
+			{
+				if (temp.Contains("/Com_")) //公共资源
+				{
+					InstInfo.CommonAssetPackageName.Add(temp);
+				}
+				else if(!temp.Contains("/Instance/")) //第三方资源
+				{
+					//有很可能是引擎资源
+					InstInfo.ThirdPartyAssetPackageName.Add(temp);
+				}
+			}
+			FString Json;
+			SimpleDataType::ConvertStructToString(InstInfo, Json);
+			FFileHelper::SaveStringToFile(Json, *InstConfigName);
+		}
+	}
 
-	//保存一份文件夹下所有文件的依赖
-	//FString InstName = FPaths::GetCleanFilename(InGamePath) + GetDefault<UFtpConfig>()->Suffix;
-	//FFileHelper::SaveStringArrayToFile(AllDependences, *(CopyTemp / InstName));
 	return bAllDependenceValid;
 }
 
@@ -983,20 +1039,13 @@ bool FtpClientManager::FTP_UploadOneFile(const FString& localFileName)
 	FString FilaName = FPaths::GetCleanFilename(localFileName);
 	int32 size = 0;
 	int32 SendByte = 0;
-	//数据连接发送文件内容:先把文件转换成二进制数据，再通过datasocket发送  
+	//数据连接发送文件内容:先把文件转换成二进制数据，再通过datasocket发送
 	TArray<uint8> sendData;
-	if (FFileHelper::LoadFileToArray(sendData,*localFileName))
-	{
-		size = sendData.Num();
-	}
-	else
-	{
+	if (!FFileHelper::LoadFileToArray(sendData, *localFileName))
 		return false;
-	}
 	//创建资源对应文件夹.并设置当前目录
 	if (!CreateDirByAsssetPath(localFileName))
 		return false;
-
 	//先发送PASV指令
 	int32 PasvPort = SendPASVCommand();
 	//创建数据连接
@@ -1028,16 +1077,39 @@ _Program_Endl:
 	return bSuccessed;
 }
 
+//上传文件以及依赖文件 传入资源的PackageName数组
+bool FtpClientManager::UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames)
+{
+	for (const auto& pakname : InPackageNames)
+	{
+		FString FileName = pakname;
+		if (FileName.RemoveFromStart(TEXT("/Game/")))
+		{
+			FileName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FileName);
+			FileName.Append(".uasset");
+			if (!FTP_UploadOneFile(FileName))
+				return false;
+			FString Suffix = GetDefault<UFtpConfig>()->Suffix;
+			FileName.ReplaceInline(TEXT(".uasset"), *Suffix);
+			if (IFileManager::Get().FileExists(*FileName))		 //如果被上传的资源所依赖的资源没有生成依赖文件
+				if (!FTP_UploadOneFile(FileName))
+					return false;
+		}
+	}
+	return true;
+}
+
 //InGamePath：/Game/Instance/ProjA
 bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray<FString>& NameNotValidFiles, TArray<FString>& DepenNotValidFiles)
 {
-	// 传入的路径是/Game/Instance
+	// 传入的路径是/Game/Instance/ProjA
 	// 先转化成绝对路径
 	FString FullPath = InGamePath;
 	if (FullPath.RemoveFromStart(TEXT("/Game/")))
 	{
 		FullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FullPath);
 	}
+	//FullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
 	bool bAllValid = true;
 	TArray<FString> ChildrenFolders;
 	IFileManager::Get().FindFilesRecursive(ChildrenFolders, *FullPath, TEXT("*"), false, true);
@@ -1045,13 +1117,13 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 	{
 		for (const auto& tempchild : ChildrenFolders)
 		{
-			if (!FileValidationOfOneFolder(NameNotValidFiles, tempchild))
+			if (!FileNameValidationOfOneFolder(NameNotValidFiles, tempchild))
 				bAllValid = false;
 		}
 	}
 	else
 	{
-		if (!FileValidationOfOneFolder(NameNotValidFiles, FullPath))
+		if(!FileNameValidationOfOneFolder(NameNotValidFiles, FullPath))
 			bAllValid = false;
 	}
 	//检查文件依赖 提示不合法的资源引用
@@ -1064,19 +1136,38 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
 		return false;
 	}
-	TArray<FString> localFiles;  //本地路径下的所有文件
+	TArray<FString> localFiles;  //本地路径下的所有文件 包括生成的依赖文件
+	TArray<FString> depenfile;
 	if (GetAllFileFromLocalPath(FullPath, localFiles))
 	{
-		//上传资源
+		//上传资源 以及依赖文件
 		for (const auto& Tempfilename : localFiles)
 		{
+			if (Tempfilename.Contains(GetDefault<UFtpConfig>()->Suffix))
+				depenfile.Add(Tempfilename);
 			if (!FTP_UploadOneFile(Tempfilename))
 				return false;
 		}
+		//找出依赖资源的PackageName
+		TArray<FString> DepenAssetPackName;
+		for (const auto& tempdepenfile : depenfile)
+		{
+			//将依赖文件（Json）格式，转换成结构体
+			FString Json;
+			FDependenList depenlist;
+			FFileHelper::LoadFileToString(Json, *tempdepenfile);
+			if (SimpleDataType::ConvertStringToStruct(Json, depenlist))
+			{
+				for (const auto& tempdep : depenlist.DepenArr)
+				{
+					DepenAssetPackName.AddUnique(tempdep.DepenAssetPackName);
+				}
+			}
+		}
+		//上传依赖资源,以及依赖资源的依赖文件
+		return UploadDepenceAssetAndDepences(DepenAssetPackName);
 	}
-	//上传依赖
-
-	return true;
+	return false;
 }
 
 bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames, TArray<FString>& NameNotValidFiles, TArray<FString>& DepenNotValidFiles)
@@ -1113,7 +1204,7 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 	TArray<FString> numArr2;
 
 	FString JsonStr;
-	DataList InfoList;
+	FDataInfoList InfoList;
 	FFileHelper::LoadFileToString(JsonStr, *DataTypeIni);
 	JsonStr.ToUpperInline();
 	if (!SimpleDataType::ConvertStringToStruct(JsonStr, InfoList))
@@ -1217,45 +1308,33 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		return false;
 	}
 	//开始上传文件,先找到所有合法依赖
-	TArray<FString> PackName = InPackNames;
+	TArray<FString> PackNames = InPackNames;
 	for (const auto& pakname : InPackNames)
 	{
 		FString FileName = pakname;
 		if (FileName.RemoveFromStart(TEXT("/Game/")))
 		{
 			FileName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FileName);
-			FileName.Append(GetDefault<UFtpConfig>()->Suffix);
-			TArray<FString> dependences;
-			FFileHelper::LoadFileToStringArray(dependences, *FileName);
-			for (const auto& tempdep : dependences)
+			FileName.Append(GetDefault<UFtpConfig>()->Suffix);		//得到依赖文件
+			FString Json;
+			FDependenList depenlist;
+			FFileHelper::LoadFileToString(Json, *FileName);
+			if (SimpleDataType::ConvertStringToStruct(Json, depenlist))
 			{
-				PackName.AddUnique(tempdep);
+				for (const auto& tempdep : depenlist.DepenArr)
+				{
+					PackNames.AddUnique(tempdep.DepenAssetPackName);
+				}
 			}
 		}
 	}
-	for (const auto& pakname : PackName)
-	{
-		FString FileName = pakname;
-		if (FileName.RemoveFromStart(TEXT("/Game/")))
-		{
-			FileName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FileName);
-			FileName.Append(".uasset");
-			if(!FTP_UploadOneFile(FileName))
-			{
-				return false;
-			}
-			FString Suffix = GetDefault<UFtpConfig>()->Suffix;
-			FileName.ReplaceInline(TEXT(".uasset"), *Suffix);
-			if(IFileManager::Get().FileExists(*FileName))
-				if(!FTP_UploadOneFile(FileName))
-					return false;
-		}
-	}
-	return bAllValid;
+	//上传依赖资源,以及依赖资源的依赖文件
+	return UploadDepenceAssetAndDepences(PackNames);
 }
 
 bool FtpClientManager::ftp_test(const FString& InFolderPath)
 {
+	DeleteUselessFile();
 	return DeleteFileOrFolder(InFolderPath);
 }
 

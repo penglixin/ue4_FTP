@@ -21,7 +21,9 @@ public:
 	void Initialize_Folder();
 	//创建实例文件夹
 	void CreateInstanceFolder(const FString& InstanceName);
-	
+	void ShowMessageBox(const TArray<FString>& NameNotValidFiles, const TArray<FString>& DepenNotValidFiles);
+
+
 public:
 	/*********************************************************************/
 	/*************************ftp客户端操作接口****************************/
@@ -53,14 +55,16 @@ public:
 	bool CreateDirByAsssetPath(const FString& InAssetFullPath);
 	//删除文件夹里面所有内容
 	bool DeleteFileOrFolder(const FString& InDir);
-	//检测单个文件夹下的文件命名是否合法
-	bool FileValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFullFolderPath);
+	//检测单个文件夹下的文件命名是否合法(只能是../../Common_Material  或者 ../../Ins_Material 文件夹，如果是其他文件夹例如 ../../Instance/ProjA 需要将他的子文件夹列出来，然后每个子文件夹都执行一次这个方法)
+	bool FileNameValidationOfOneFolder(TArray<FString>& NoValidFiles, const FString& InFullFolderPath);
 	//寻找一个资源的所有依赖
 	void RecursiveFindDependence(const FString& InPackageName, TArray<FString>& AllDependence);
 	//检查一个资源的所有依赖是否合法
 	bool ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence, bool bAllNameValid);
 	//检查一个文件夹下的所有资源的所有依赖
 	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FString>& NotValidDependences, bool bAllNameValid = false);
+	//上传文件以及依赖文件 传入资源的PackageName数组
+	bool UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames);
 
 private:
 	//接受服务端返回的消息
@@ -83,11 +87,12 @@ private:
 	//Debug
 	void Print(const FString& Mesg, float Time = 100.f, FColor Color = FColor::Yellow);
 	void Print(const TArray<uint8>& dataArray, float Time = 100.f, FColor Color = FColor::Purple);
-public:
-	void ShowMessageBox(const TArray<FString>& NameNotValidFiles, const TArray<FString>& DepenNotValidFiles);
+	//删除没有用到的依赖文件
+	void DeleteUselessFile();
+
 private:
 	static FtpClientManager* ftpInstance;
-	int32 ResponseCode;		//服务器响应码
+	int32 ResponseCode;			//服务器响应码
 	FSocket* controlSocket;		//控制连接 :一直保持连接直到程序结束，或者服务器关闭
 	FSocket* dataSocket;		//数据连接： 在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
 	FIPv4Address ipAddr;

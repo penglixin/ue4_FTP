@@ -62,8 +62,7 @@ void FSimpleFtpToolModule::StartupModule()
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(SimpleFtpToolTabName, FOnSpawnTab::CreateRaw(this, &FSimpleFtpToolModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FSimpleFtpToolTabTitle", "SimpleFtpTool"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
-
-
+	
 	//自定义菜单
 	{
 		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
@@ -126,7 +125,7 @@ void FSimpleFtpToolModule::CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuil
 	bool bCanSubmit = true;
 	for (const auto& Temp : NewPaths)
 	{
-		if (Temp.Equals("/Game") || Temp.Equals("/Game/Map") || Temp.Equals("/Game/Instance") )
+		if (Temp.Equals("/Game") || Temp.Equals("/Game/Map") || Temp.Equals("/Game/Instance") || Temp.Contains("/Ins_"))   //只能提交实例文件夹，以及公共文件夹
 		{
 			bCanSubmit = false;
 			break;
@@ -143,8 +142,8 @@ void FSimpleFtpToolModule::CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuil
 				FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::SubmitSourceUnderTheFolder, NewPaths)));
 
 			MenuBuilder.AddMenuEntry(
-				LOCTEXT("GenerateDepend", "Check Name Generate Dependency"),
-				LOCTEXT("GenerateDependTips", "Generate dependency file under the folder."),
+				LOCTEXT("GenerateDepend", "Check Name And Dependency"),
+				LOCTEXT("GenerateDependTips", "Check Asset Name And Generate Dependency File Under The Folder."),
 				FSlateIcon(),
 				FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::CheckNameAndGenerateDependencyFiles, NewPaths)));
 		}
@@ -177,6 +176,17 @@ TSharedRef<FExtender> FSimpleFtpToolModule::OnExtendContentAssetBrowser(const TA
 
 void FSimpleFtpToolModule::CreateSubMenuForAssetBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths)
 {
+	bool bCanSubmit = true;
+	for (const auto& temp : NewPaths)
+	{
+		if (temp.Contains(TEXT("/Ins_")))  //只能提交公共文件夹下的Asset
+		{
+			bCanSubmit = false;
+			break;
+		}
+	}
+	if (!bCanSubmit)
+		return;
 	MenuBuilder.BeginSection("Custom Menu", LOCTEXT("CustomMenu", "Custom Menu Option"));
 	{
 		MenuBuilder.AddMenuEntry(
@@ -206,9 +216,21 @@ void FSimpleFtpToolModule::SubmitSourceUnderTheFolder(TArray<FString> NewPaths)
 {
 	TArray<FString> NameNotValidFiles;
 	TArray<FString> DepenNotValidFiles;
+	bool bUploadSuccess = true;
+	FString FolderStr;
 	for (const auto& Temp : NewPaths)
 	{
-		FTP_INSTANCE->FTP_UploadFilesByFolder(Temp, NameNotValidFiles, DepenNotValidFiles);
+		FolderStr += Temp + TEXT("\n");
+		if (!FTP_INSTANCE->FTP_UploadFilesByFolder(Temp, NameNotValidFiles, DepenNotValidFiles))
+			bUploadSuccess = false;
+	}
+	if (bUploadSuccess)
+	{
+		FText DialogText = FText::Format(
+			LOCTEXT("Upload Folder DialogText", " Upload \n\n{0}\n Asset Successful!"),
+			FText::FromString(FolderStr)
+		);
+		FMessageDialog::Open(EAppMsgType::Ok, DialogText);
 	}
 }
 
@@ -222,8 +244,21 @@ void FSimpleFtpToolModule::CheckNameAndGenerateDependencyFiles(TArray<FString> N
 		FString CopyTemp = temp;
 		CopyTemp.RemoveFromStart(TEXT("/Game/"));
 		FString FullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / CopyTemp);
-		if(!FTP_INSTANCE->FileValidationOfOneFolder(NameNotValid, FullPath))
-		bAllNameValid = false;
+		TArray<FString> ChildrenFolders;
+		IFileManager::Get().FindFilesRecursive(ChildrenFolders, *FullPath, TEXT("*"), false, true);
+		if (ChildrenFolders.Num())
+		{
+			for (const auto& tempchild : ChildrenFolders)
+			{
+				if (!FTP_INSTANCE->FileNameValidationOfOneFolder(NameNotValid, tempchild))
+					bAllNameValid = false;
+			}
+		}
+		else
+		{
+			if(!FTP_INSTANCE->FileNameValidationOfOneFolder(NameNotValid, FullPath))
+				bAllNameValid = false;
+		}
 	}
 	for(const auto& temp : NewPaths)
 	{

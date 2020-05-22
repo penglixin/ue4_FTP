@@ -69,11 +69,14 @@ struct FDataTypeInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-	FString TYPENAME;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString TYPENAME;
 
-	FString TYPEABBR;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString TYPEABBR;
 
-	FString TYPEDESCRIPTION;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString TYPEDESCRIPTION;
 
 };
 
@@ -82,17 +85,67 @@ struct FDataInfoList
 {
 	GENERATED_USTRUCT_BODY()
 
-	FString FILEEDESCRIPTION;
 
-	TArray<FDataTypeInfo> DATATYPRARR;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString FILEEDESCRIPTION;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		TArray<FDataTypeInfo> DATATYPRARR;
 
 };
 
+USTRUCT(BlueprintType)
+struct FDependenceInfo
+{
+	GENERATED_USTRUCT_BODY()
 
-typedef FDataInfoList DataList;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString DepenAssetPackName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString ValidCode;
+	
+};
+
+USTRUCT(BlueprintType)
+struct FDependenList
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		FString SourceAssetName;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		TArray<FDependenceInfo> DepenArr;
+};
+
+
+//实例配置文件信息
+USTRUCT(BlueprintType)
+struct FInstanceInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		FString InstValidCode;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		TArray<FString> CommonAssetPackageName;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		TArray<FString> ThirdPartyAssetPackageName;
+};
+
 
 namespace SimpleDataType
 {
-	void ConvertStructToString(const DataList& TypeArr, FString& Json);
-	bool ConvertStringToStruct(const FString& Json, DataList& TypeArr);
+	void ConvertStructToString(const FDataInfoList& TypeArr, FString& Json);
+	bool ConvertStringToStruct(const FString& Json, FDataInfoList& TypeArr);
+
+	void ConvertStructToString(const FDependenList& DepenArr, FString& Json);
+	bool ConvertStringToStruct(const FString& Json, FDependenList& DepenArr);
+
+	void ConvertStructToString(const FInstanceInfo& InstInfo, FString& Json);
+	bool ConvertStringToStruct(const FString& Json, FInstanceInfo& InstInfo);
+
 }

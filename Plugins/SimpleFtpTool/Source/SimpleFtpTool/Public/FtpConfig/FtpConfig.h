@@ -30,7 +30,7 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "FtpSettings", meta = (ToolTip = "the port of FTP Server."))
 		int32 ServerPort;
 
-	UPROPERTY(config, EditAnywhere, Category = "FtpSettings", meta = (ToolTip = "Suffix of dependent file."))
+	UPROPERTY(config, EditAnywhere, Category = "FtpSettings", meta = (ToolTip = "Set a Suffix for dependent file (include dot)."))
 		FString Suffix;
 
 	UPROPERTY(config, EditAnywhere, Category = "FtpInstProjectName", meta = (ToolTip = "the name of instance."))
