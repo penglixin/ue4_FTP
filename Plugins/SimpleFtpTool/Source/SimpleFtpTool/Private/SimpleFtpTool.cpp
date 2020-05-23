@@ -21,6 +21,7 @@ void FSimpleFtpToolModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	FTP_INSTANCE->Initialize_Folder();
+	CreateToFTPServer();
 	FSimpleFtpToolStyle::Initialize();
 	FSimpleFtpToolStyle::ReloadTextures();
 	FSimpleFtpToolCommands::Register();
@@ -195,6 +196,27 @@ void FSimpleFtpToolModule::CreateSubMenuForAssetBrowser(FMenuBuilder& MenuBuilde
 			FSlateIcon(),
 			FUIAction(FExecuteAction::CreateRaw(this, &FSimpleFtpToolModule::SubmitSelectedSource, NewPaths)));
 	}MenuBuilder.EndSection();
+}
+
+void FSimpleFtpToolModule::CreateToFTPServer()
+{
+	const FString FTPConfig = FPaths::ProjectConfigDir() + TEXT("FtpAccountInfo.ini");
+	FString IP = "";
+	int32 Port = 0;
+	FString UserName = "";
+	FString Password = "";
+	if (GConfig)
+	{
+		GConfig->GetString(TEXT("FtpAccount"), TEXT("IP"), IP, FTPConfig);
+		GConfig->GetInt(TEXT("FtpAccount"), TEXT("Port"), Port, FTPConfig);
+		GConfig->GetString(TEXT("FtpAccount"), TEXT("UserName"), UserName, FTPConfig);
+		GConfig->GetString(TEXT("FtpAccount"), TEXT("Password"), Password, FTPConfig);
+	}
+
+	check(FTP_INSTANCE->FTP_CreateControlSocket(IP, Port));
+	check(FTP_INSTANCE->FTP_SendCommand(EFtpCommandType::USER, UserName));
+	check(FTP_INSTANCE->FTP_SendCommand(EFtpCommandType::PASS, Password));
+
 }
 
 void FSimpleFtpToolModule::CreateInstanceFolder(TArray<FString> NewPaths)

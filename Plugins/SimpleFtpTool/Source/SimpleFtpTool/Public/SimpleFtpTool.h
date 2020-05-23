@@ -37,6 +37,9 @@ private:
 
 
 private:
+
+	void CreateToFTPServer();
+
 	//自定义菜单按钮点击事件 (创建实例文件夹)
 	void CreateInstanceFolder(TArray<FString> NewPaths);
 	//自定义菜单按钮点击事件 （提交文件夹下的资源）

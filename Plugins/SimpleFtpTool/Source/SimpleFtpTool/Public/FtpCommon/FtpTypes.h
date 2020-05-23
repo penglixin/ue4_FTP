@@ -63,7 +63,7 @@ enum class EFolderType : uint8
 
 
 
-
+//for DataType
 USTRUCT(BlueprintType)
 struct FDataTypeInfo
 {
@@ -79,7 +79,7 @@ struct FDataTypeInfo
 		FString TYPEDESCRIPTION;
 
 };
-
+//for DataType
 USTRUCT(BlueprintType)
 struct FDataInfoList
 {
@@ -95,7 +95,7 @@ struct FDataInfoList
 };
 
 
-
+//资源的依赖文件
 USTRUCT(BlueprintType)
 struct FDependenceInfo
 {
@@ -108,7 +108,7 @@ struct FDependenceInfo
 		FString ValidCode;
 	
 };
-
+//资源的依赖文件
 USTRUCT(BlueprintType)
 struct FDependenList
 {
@@ -118,7 +118,12 @@ struct FDependenList
 		FString SourceAssetName;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		FString LastModifyTime;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
 		TArray<FDependenceInfo> DepenArr;
+
+	void Empty();
 };
 
 
@@ -149,6 +154,8 @@ struct FInstanceInfo
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
 		TArray<FString> ThirdPartyAssetPackageName;
+	
+	void Empty();
 };
 
 

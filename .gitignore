@@ -49,6 +49,9 @@ SourceArt/**/*.tga
 Binaries/*
 Plugins/*/Binaries/*
 
+# FtpAccount
+Config/FtpAccountInfo.ini
+
 # Builds
 Build/*
 

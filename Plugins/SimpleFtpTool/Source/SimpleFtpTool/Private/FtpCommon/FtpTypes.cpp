@@ -75,6 +75,7 @@ void SimpleDataType::ConvertStructToString(const FDependenList& DepenArr, FStrin
 	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
 	JsonWriter->WriteObjectStart();
 	JsonWriter->WriteValue(TEXT("SourceAssetName"), DepenArr.SourceAssetName);
+	JsonWriter->WriteValue(TEXT("LastModifyTime"), DepenArr.LastModifyTime);
 	JsonWriter->WriteArrayStart(TEXT("DepenArr"));
 	for (const auto& tempdepen : DepenArr.DepenArr)
 	{
@@ -97,6 +98,10 @@ bool SimpleDataType::ConvertStringToStruct(const FString& Json, FDependenList& D
 	{
 		const TSharedPtr<FJsonObject> JsonObject = JsonParsed->AsObject();
 		if (!JsonObject->TryGetStringField(TEXT("SourceAssetName"), DepenArr.SourceAssetName))
+		{
+			bSuccessed = false;
+		}
+		if (!JsonObject->TryGetStringField(TEXT("LastModifyTime"), DepenArr.LastModifyTime))
 		{
 			bSuccessed = false;
 		}
@@ -211,9 +216,25 @@ bool SimpleDataType::ConvertStringToStruct(const FString& Json, FInstanceInfo& I
 }
 
 
+
+void FDependenList::Empty()
+{
+	SourceAssetName = "";
+	LastModifyTime = "";
+	DepenArr.Empty();
+}
+
+void FInstanceInfo::Empty()
+{
+	InstValidCode = "";
+	CommonAssetPackageName.Empty();
+	ThirdPartyAssetPackageName.Empty();
+}
+
 #if WITH_EDITOR
 #if PLATFORM_WINDOWS
 #pragma optimize("",on) 
 #endif
 #endif
+
 

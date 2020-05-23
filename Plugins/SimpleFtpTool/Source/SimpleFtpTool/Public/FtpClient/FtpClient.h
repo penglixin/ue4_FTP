@@ -46,7 +46,7 @@ public:
 	//根据PackageName上传资源
 	bool FTP_UploadFilesByAsset(const TArray<FString>& InPackNames, TArray<FString>& NameNotValidFiles, TArray<FInvalidDepInfo>& DepenNotValidFiles);
 
-	bool ftp_test(const FString& InFolderPath);
+	bool ftp_test(const FString& InFolderPath, FDateTime& DataTime);
 
 public:
 	//列举路径下的所有文件(绝对路径)
@@ -60,11 +60,13 @@ public:
 	//寻找一个资源的所有依赖
 	void RecursiveFindDependence(const FString& InPackageName, TArray<FString>& AllDependence);
 	//检查一个资源的所有依赖是否合法
-	bool ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence, FInvalidDepInfo& InvalidInfo, bool bAllNameValid);
+	bool ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence, FInvalidDepInfo& InvalidInfo, bool& bDepHasChanged, bool bAllNameValid);
 	//检查一个文件夹下的所有资源的所有依赖
 	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FInvalidDepInfo>& NotValidDependences, bool bAllNameValid = false);
 	//上传文件以及依赖文件 传入资源的PackageName数组
 	bool UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames);
+	//判断服务器上是否存在该资源
+	bool DoesAssetExistOnServer();
 
 private:
 	//接受服务端返回的消息
@@ -94,7 +96,7 @@ private:
 	static FtpClientManager* ftpInstance;
 	int32 ResponseCode;			//服务器响应码
 	FSocket* controlSocket;		//控制连接 :一直保持连接直到程序结束，或者服务器关闭
-	FSocket* dataSocket;		//数据连接： 在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
+	FSocket* dataSocket;		//数据连接 :在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
 	FIPv4Address ipAddr;
 	
 private:

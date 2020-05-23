@@ -50,9 +50,9 @@ bool Aue4_FTPGameModeBase::FTP_UploadFiles(const FString& localPath, TArray<FStr
 	return FTP_INSTANCE->FTP_UploadOneFile(localPath);
 }
 
-bool Aue4_FTPGameModeBase::TEST_Function(const FString& InFolderPath)
+bool Aue4_FTPGameModeBase::TEST_Function(const FString& InFolderPath, FDateTime& DataTime)
 {
-	return FTP_INSTANCE->ftp_test(InFolderPath);
+	return FTP_INSTANCE->ftp_test(InFolderPath, DataTime);
 }
 
 bool Aue4_FTPGameModeBase::MoveFile(const FString& to, const FString& from, bool bReplace)

@@ -57,6 +57,7 @@ for (const auto& TempName : AllFileNames)\
 }
 
 
+
 #define NAME_VALIDATION_ASSET(Prefix)\
 UperFileName = AssetName.ToUpper(); \
 numArr1.Add(AssetName);\
@@ -102,3 +103,38 @@ if (numArr1.Num() != numArr2.Num())\
 	numArr2.Add(FGuid::NewGuid().ToString());\
 }\
 break
+
+
+#define GENERATE_DEP_FILE()\
+bDepHasChanged = true; \
+depenlist.Empty();\
+depenlist.SourceAssetName = AssetPackName;\
+for (const auto& temp : TheAssetDependence)\
+{\
+	FDependenceInfo OneInfo;\
+	OneInfo.DepenAssetPackName = temp;\
+	OneInfo.ValidCode = FGuid::NewGuid().ToString();\
+	depenlist.DepenArr.Add(OneInfo);\
+}\
+FDateTime DataTime = IFileManager::Get().GetTimeStamp(*UAssetName);\
+depenlist.LastModifyTime = ConvertTimeToStr(DataTime);\
+SimpleDataType::ConvertStructToString(depenlist, Json);\
+FFileHelper::SaveStringToFile(Json, *FileName)
+
+
+
+#define GENERATE_INST_FILE()\
+InstInfo.InstValidCode = FGuid::NewGuid().ToString();\
+for (const auto& temp : AllDependences)\
+{\
+	if (temp.Contains("/Com_")) \
+	{\
+		InstInfo.CommonAssetPackageName.Add(temp);\
+	}\
+	else if (!temp.Contains("/Instance/")) \
+	{\
+		InstInfo.ThirdPartyAssetPackageName.Add(temp);\
+	}\
+}\
+SimpleDataType::ConvertStructToString(InstInfo, Json);\
+FFileHelper::SaveStringToFile(Json, *InstConfigName)
