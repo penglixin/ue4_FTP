@@ -12,8 +12,29 @@
 #include "ContentBrowserModule.h"
 #include "FtpClient/FtpClient.h"
 #include "Misc/MessageDialog.h"
+#include "Widgets/SOverlay.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/Layout/SScrollBox.h"
+#include "EditorStyleSet.h"
+#include "FtpSlate/FtpPreviewViewport.h"
+#include "FtpSlate/FtpViewType.h"
+#include "FtpSlate/FileTree/FilePrasing.h"
+#include "FtpSlate/FileTree/SFolder.h"
+
 
 static const FName SimpleFtpToolTabName("SimpleFtpTool");
+
+
+struct FSimpleFtpViewID
+{
+	static const FName ViewportID;
+	static const FName FiletreeID;
+};
+
+const FName FSimpleFtpViewID::ViewportID(TEXT("UnrealPakViewportID"));
+const FName FSimpleFtpViewID::FiletreeID(TEXT("UnrealPakFiletreeID"));
+
+
 
 #define LOCTEXT_NAMESPACE "FSimpleFtpToolModule"
 
@@ -21,7 +42,7 @@ void FSimpleFtpToolModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	FTP_INSTANCE->Initialize_Folder();
-	CreateToFTPServer();
+	ConnectToFTPServer();
 	FSimpleFtpToolStyle::Initialize();
 	FSimpleFtpToolStyle::ReloadTextures();
 	FSimpleFtpToolCommands::Register();
@@ -44,19 +65,15 @@ void FSimpleFtpToolModule::StartupModule()
 			GetMutableDefault<UFtpConfig>());
 	}
 		
-	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-	
+	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");	
 	{
 		TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
 		MenuExtender->AddMenuExtension("WindowLayout", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FSimpleFtpToolModule::AddMenuExtension));
-
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
-	}
-	
+	}	
 	{
 		TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
 		ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FSimpleFtpToolModule::AddToolbarExtension));
-		
 		LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 	}
 	
@@ -72,21 +89,31 @@ void FSimpleFtpToolModule::StartupModule()
 
 		TArray<FContentBrowserMenuExtender_SelectedAssets>& ContentBrowserMenuExtender_SelectedAssets = ContentBrowserModule.GetAllAssetViewContextMenuExtenders();
 		ContentBrowserMenuExtender_SelectedAssets.Add(FContentBrowserMenuExtender_SelectedAssets::CreateRaw(this, &FSimpleFtpToolModule::OnExtendContentAssetBrowser));
-
 	}
+
+	RegisterTabSpawners();
+
+	if (!GMeshComponent)
+	{
+		GMeshComponent = NewObject<UStaticMeshComponent>();
+		GMeshComponent->AddToRoot();
+	}
+
+	SimpleOneParamDelegate.BindRaw(this, &FSimpleFtpToolModule::UpdateFiles);
 }
 
 void FSimpleFtpToolModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
 	FSimpleFtpToolStyle::Shutdown();
-
 	FSimpleFtpToolCommands::Unregister();
-
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(SimpleFtpToolTabName);
-
 	FtpClientManager::Destroy();
+
+	if (GMeshComponent)
+	{
+		GMeshComponent->ConditionalBeginDestroy();
+	}
+	GMeshComponent = nullptr;
 
 }
 
@@ -103,11 +130,10 @@ TSharedRef<SDockTab> FSimpleFtpToolModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		[
 			// Put your tab content here!
 			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
 			[
-				SNew(STextBlock)
-				.Text(WidgetText)
+				CreateEditor()
 			]
 		];
 }
@@ -198,7 +224,65 @@ void FSimpleFtpToolModule::CreateSubMenuForAssetBrowser(FMenuBuilder& MenuBuilde
 	}MenuBuilder.EndSection();
 }
 
-void FSimpleFtpToolModule::CreateToFTPServer()
+TSharedRef<SDockTab> FSimpleFtpToolModule::SpawnByUnrealFtpViewTab(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab)
+		[
+			// Put your tab content here!
+			SNew(SBox)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SimpleFtpPreviewViewport)
+			]
+		];
+}
+
+TSharedRef<SDockTab> FSimpleFtpToolModule::SpawnByUnrealFtpFiletreeTab(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab)
+		[
+			// Put your tab content here!
+			SNew(SBox)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SNew(SImage)
+					.Image(FEditorStyle::Get().GetBrush("ExternalImagePicker.BlankImage"))
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SAssignNew(ScrollBox, SScrollBox)
+					.Orientation(Orient_Vertical)
+				]
+			]
+		];
+}
+
+void FSimpleFtpToolModule::UpdateFiles(const TArray<FString>& Files)
+{
+	if(ScrollBox.IsValid())
+	{
+		SimpleFtpFile::FFileList FileList;
+		SimpleFtpFile::FilesParsing(Files, FileList);
+		ScrollBox->ClearChildren();
+		ScrollBox->AddSlot()
+			[
+				SNew(SFolder,FileList)
+			];
+	}
+}
+
+void FSimpleFtpToolModule::ConnectToFTPServer()
 {
 	const FString FTPConfig = FPaths::ProjectConfigDir() + TEXT("FtpAccountInfo.ini");
 	FString IP = "";
@@ -284,7 +368,7 @@ void FSimpleFtpToolModule::CheckNameAndGenerateDependencyFiles(TArray<FString> N
 	}
 	for(const auto& temp : NewPaths)
 	{
-		FTP_INSTANCE->ValidationAllDependenceOfTheFolder(temp,DepenNotValidFiles, bAllNameValid);
+		FTP_INSTANCE->ValidationAllDependenceOfTheFolder(temp, DepenNotValidFiles, bAllNameValid);
 	}
 	FTP_INSTANCE->ShowMessageBox(NameNotValid, DepenNotValidFiles);
 }
@@ -298,7 +382,62 @@ void FSimpleFtpToolModule::SubmitSelectedSource(TArray<FString> NewPaths)
 
 void FSimpleFtpToolModule::PluginButtonClicked()
 {
+	/*	Com_Material/Mat_pp_1_sd1.dep
+		Com_Material/Mat_pp_1_sd1.uasset
+		Instance/ProjD/Ins_Material/Mat_pp_0_sd.dep
+		Instance/ProjD/Ins_Material/Mat_pp_0_sd.uasset
+	*/
+	TArray<FString> FileNames;
+	FileNames.Add(TEXT("Com_Material/Mat_pp_1_sd1.dep"));
+	FileNames.Add(TEXT("Com_Material/Mat_pp_1_sd1.uasset"));
+	FileNames.Add(TEXT("Instance/ProjD/Ins_Material/Mat_pp_0_sd.dep"));
+	FileNames.Add(TEXT("Instance/ProjD/Ins_Material/Mat_pp_0_sd.uasset"));
+	
 	FGlobalTabmanager::Get()->InvokeTab(SimpleFtpToolTabName);
+
+
+	SimpleOneParamDelegate.ExecuteIfBound(FileNames);
+}
+
+void FSimpleFtpToolModule::RegisterTabSpawners()
+{
+	FGlobalTabmanager::Get()->RegisterTabSpawner(
+		FSimpleFtpViewID::ViewportID,
+		FOnSpawnTab::CreateRaw(this, &FSimpleFtpToolModule::SpawnByUnrealFtpViewTab))
+		.SetDisplayName(LOCTEXT("SimpleFtpViewportID", "Rendering"));
+
+	FGlobalTabmanager::Get()->RegisterTabSpawner(
+		FSimpleFtpViewID::FiletreeID,
+		FOnSpawnTab::CreateRaw(this, &FSimpleFtpToolModule::SpawnByUnrealFtpFiletreeTab))
+		.SetDisplayName(LOCTEXT("SimpleFtpFiletreetID", "FileTree"));
+}
+
+TSharedRef<SWidget> FSimpleFtpToolModule::CreateEditor()
+{
+	//水平3：7拆分，3的部分在按4：6垂直拆分
+	TSharedRef<FTabManager::FLayout> LayOut = FTabManager::NewLayout("FSimpleFtp_Layout")
+		->AddArea
+		(
+			FTabManager::NewPrimaryArea()->SetOrientation(Orient_Horizontal)
+			->Split
+			(
+
+				FTabManager::NewStack()
+				->SetSizeCoefficient(0.4f)
+				->SetHideTabWell(true)
+				->AddTab(FSimpleFtpViewID::FiletreeID, ETabState::OpenedTab)
+			)
+			->Split
+			(
+				FTabManager::NewStack()
+				->SetSizeCoefficient(0.6f)
+				->SetHideTabWell(true)
+				->AddTab(FSimpleFtpViewID::ViewportID, ETabState::OpenedTab)
+			)
+		);
+	//布局完毕再创建一个窗口
+	TSharedPtr<SWindow> SimpleWindows = SNew(SWindow);
+	return FGlobalTabmanager::Get()->RestoreFrom(LayOut, SimpleWindows).ToSharedRef();
 }
 
 void FSimpleFtpToolModule::AddMenuExtension(FMenuBuilder& Builder)

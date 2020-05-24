@@ -4,7 +4,7 @@
 #define LIST_SUCCEED 150  //打开数据控制通道成功
 #define ERROR_DIRECTORY 550  //LIST失败 没有路径
 #define SUCCEED_TRANSFER 226  //上传，下载成功
-
+#define FILE_EXIST 213  //判断文件是否存在于服务器
 
 #define NAME_VALIDATION_FOLDER(Prefix)  \
 for (const auto& TempName : AllFileNames)\

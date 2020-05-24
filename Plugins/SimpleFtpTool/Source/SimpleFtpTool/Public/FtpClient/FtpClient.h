@@ -66,7 +66,7 @@ public:
 	//上传文件以及依赖文件 传入资源的PackageName数组
 	bool UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames);
 	//判断服务器上是否存在该资源
-	bool DoesAssetExistOnServer();
+	bool OverrideAssetOnServer(const FString& FileFullPath);
 
 private:
 	//接受服务端返回的消息
@@ -74,7 +74,7 @@ private:
 	//创建 dataSocket
 	bool CreateDataSocket_PASV(int32 port2);
 	//将接收到的二进制数据转换成FString
-	FString BinaryArrayToString(TArray<uint8> BinaryArray);
+	FString BinaryArrayToString(const TArray<uint8>& BinaryArray);
 	//转换指令
 	FString SwitchCommand(const EFtpCommandType& cmdtype, const FString& Param);
 	//从服务器返回的字符串中获取新的端口号

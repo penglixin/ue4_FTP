@@ -59,8 +59,7 @@ void FtpClientManager::DeleteUselessFile()
 			Copyfile.RemoveFromEnd(TEXT("/") + FileName);
 			FileName.RemoveFromEnd(TEXT(".uasset"));  // xxx
 			FString LastFolderName = FPaths::GetCleanFilename(Copyfile);
-
-			if(!FileName.Equals(LastFolderName))
+			if(!FileName.Equals(LastFolderName)) //判断是不是实例配置文件
 				IFileManager::Get().Delete(*temp);
 		}
 	}
@@ -238,7 +237,7 @@ bool FtpClientManager::ReceiveData(FSocket* sock, FString& RecvMesg, TArray<uint
 	return true;
 }
 
-FString FtpClientManager::BinaryArrayToString(TArray<uint8> BinaryArray)
+FString FtpClientManager::BinaryArrayToString(const TArray<uint8>& BinaryArray)
 {
 	return FString(ANSI_TO_TCHAR(reinterpret_cast<const char*>(BinaryArray.GetData())));
 }
@@ -835,6 +834,57 @@ bool FtpClientManager::ValidationAllDependenceOfTheFolder(const FString& InGameP
 	return bAllDependenceValid;
 }
 
+//上传文件以及依赖文件 传入资源的PackageName数组
+bool FtpClientManager::UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames)
+{
+	for (const auto& pakname : InPackageNames)
+	{
+		FString FileName = pakname;
+		if (FileName.RemoveFromStart(TEXT("/Game/")))
+		{
+			FileName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FileName);
+			FileName.Append(".uasset");
+			if (!FTP_UploadOneFile(FileName))
+				return false;
+			FString Suffix = GetDefault<UFtpConfig>()->Suffix;
+			FileName.ReplaceInline(TEXT(".uasset"), *Suffix);
+			if (IFileManager::Get().FileExists(*FileName))		 //如果被上传的资源所依赖的资源没有生成依赖文件
+				if (!FTP_UploadOneFile(FileName))
+					return false;
+		}
+	}
+	return true;
+}
+
+bool FtpClientManager::OverrideAssetOnServer(const FString& FileFullPath)
+{
+	bool bUpload = true;
+	FString FileNameOnServer = FileFullPath;
+	FileNameOnServer.RemoveFromStart(FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()));
+	FTP_SendCommand(EFtpCommandType::SIZE, FileNameOnServer);
+	if (FILE_EXIST == ResponseCode)
+	{
+		//文件存在 弹框提示是否覆盖服务器
+		EAppReturnType::Type returntype;
+		FString OptionStr = TEXT("the file '") + FileNameOnServer + TEXT("' is already exist on server, override it?");
+		returntype = FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(OptionStr));
+		switch (returntype)
+		{
+		case EAppReturnType::Type::Yes:
+			bUpload = true;
+			break;
+		case EAppReturnType::Type::No:
+			bUpload = false;
+			break;
+		default:
+			bUpload = false;
+			break;
+		}
+	}
+	//不存在 直接上传
+	return bUpload;
+}
+
 
 /******************************************************************************/
 /******************************************************************************/
@@ -1057,6 +1107,12 @@ bool FtpClientManager::FTP_UploadOneFile(const FString& localFileName)
 	FString FilaName = FPaths::GetCleanFilename(localFileName);
 	int32 size = 0;
 	int32 SendByte = 0;
+	//检查是否已经存在服务器 是否覆盖服务器上文件
+	if (!OverrideAssetOnServer(localFileName))
+	{
+		return true;
+	}
+
 	//数据连接发送文件内容:先把文件转换成二进制数据，再通过datasocket发送
 	TArray<uint8> sendData;
 	if (!FFileHelper::LoadFileToArray(sendData, *localFileName))
@@ -1093,28 +1149,6 @@ _Program_Endl:
 	}
 	FTP_SendCommand(EFtpCommandType::CWD, TEXT("/"));
 	return bSuccessed;
-}
-
-//上传文件以及依赖文件 传入资源的PackageName数组
-bool FtpClientManager::UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames)
-{
-	for (const auto& pakname : InPackageNames)
-	{
-		FString FileName = pakname;
-		if (FileName.RemoveFromStart(TEXT("/Game/")))
-		{
-			FileName = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / FileName);
-			FileName.Append(".uasset");
-			if (!FTP_UploadOneFile(FileName))
-				return false;
-			FString Suffix = GetDefault<UFtpConfig>()->Suffix;
-			FileName.ReplaceInline(TEXT(".uasset"), *Suffix);
-			if (IFileManager::Get().FileExists(*FileName))		 //如果被上传的资源所依赖的资源没有生成依赖文件
-				if (!FTP_UploadOneFile(FileName))
-					return false;
-		}
-	}
-	return true;
 }
 
 //InGamePath：/Game/Instance/ProjA
@@ -1364,11 +1398,13 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 
 bool FtpClientManager::ftp_test(const FString& InFolderPath, FDateTime& DataTime)
 {
-	//DeleteUselessFile();
 	DataTime = IFileManager::Get().GetTimeStamp(*InFolderPath);
+	OverrideAssetOnServer(InFolderPath);
 	return false;
 	//DeleteFileOrFolder(InFolderPath);
 }
+
+
 
 #if WITH_EDITOR
 #if PLATFORM_WINDOWS

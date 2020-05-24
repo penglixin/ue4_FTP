@@ -19,10 +19,10 @@ public:
 
 	UFtpConfig();
 
-	UPROPERTY(config, EditAnywhere, Category = "Debug", meta = (ToolTip = "show the debug message."))
+	UPROPERTY(config, EditAnywhere, Category = "FtpDebug", meta = (ToolTip = "show the debug message."))
 		bool bShowServerMesg;
 
-	UPROPERTY(config, EditAnywhere, Category = "Debug", meta = (ClampMin =0.2f, ClampMax = 2.f, ToolTip = "sleep time."))
+	UPROPERTY(config, EditAnywhere, Category = "FtpDebug", meta = (ClampMin =0.2f, ClampMax = 2.f, ToolTip = "sleep time."))
 		float sleeptime;
 
 	UPROPERTY(config, EditAnywhere, Category = "FtpSettings", meta = (ToolTip = "Set a Suffix for dependent file (include dot)."))

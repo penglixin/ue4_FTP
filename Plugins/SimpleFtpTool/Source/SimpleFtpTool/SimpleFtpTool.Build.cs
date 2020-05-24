@@ -48,7 +48,11 @@ public class SimpleFtpTool : ModuleRules
 				"Slate",
 				"SlateCore",
                 "Settings",
-                "ContentBrowser"
+                "ContentBrowser",
+                "AdvancedPreviewScene",
+                "PropertyEditor",
+                "EditorStyle",
+                "ProceduralMeshComponent"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
