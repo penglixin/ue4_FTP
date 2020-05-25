@@ -8,7 +8,7 @@
 #endif
 
 
-void SimpleDataType::ConvertStructToString(const FDataInfoList& TypeArr, FString& Json)
+void SimpleFtpDataType::ConvertStructToString(const FDataInfoList& TypeArr, FString& Json)
 {
 	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
 	JsonWriter->WriteObjectStart();
@@ -27,7 +27,7 @@ void SimpleDataType::ConvertStructToString(const FDataInfoList& TypeArr, FString
 	JsonWriter->Close();
 }
 
-bool SimpleDataType::ConvertStringToStruct(const FString& Json, FDataInfoList& TypeArr)
+bool SimpleFtpDataType::ConvertStringToStruct(const FString& Json, FDataInfoList& TypeArr)
 {
 	bool bSuccessed = true;
 	TSharedPtr<FJsonValue> JsonParsed;
@@ -70,12 +70,13 @@ bool SimpleDataType::ConvertStringToStruct(const FString& Json, FDataInfoList& T
 	return bSuccessed;
 }
 
-void SimpleDataType::ConvertStructToString(const FDependenList& DepenArr, FString& Json)
+void SimpleFtpDataType::ConvertStructToString(const FDependenList& DepenArr, FString& Json)
 {
 	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
 	JsonWriter->WriteObjectStart();
 	JsonWriter->WriteValue(TEXT("SourceAssetName"), DepenArr.SourceAssetName);
 	JsonWriter->WriteValue(TEXT("LastModifyTime"), DepenArr.LastModifyTime);
+	JsonWriter->WriteValue(TEXT("ValidCode"), DepenArr.ValidCode);
 	JsonWriter->WriteArrayStart(TEXT("DepenArr"));
 	for (const auto& tempdepen : DepenArr.DepenArr)
 	{
@@ -89,7 +90,7 @@ void SimpleDataType::ConvertStructToString(const FDependenList& DepenArr, FStrin
 	JsonWriter->Close();
 }
 
-bool SimpleDataType::ConvertStringToStruct(const FString& Json, FDependenList& DepenArr)
+bool SimpleFtpDataType::ConvertStringToStruct(const FString& Json, FDependenList& DepenArr)
 {
 	bool bSuccessed = true;
 	TSharedPtr<FJsonValue> JsonParsed;
@@ -102,6 +103,10 @@ bool SimpleDataType::ConvertStringToStruct(const FString& Json, FDependenList& D
 			bSuccessed = false;
 		}
 		if (!JsonObject->TryGetStringField(TEXT("LastModifyTime"), DepenArr.LastModifyTime))
+		{
+			bSuccessed = false;
+		}
+		if (!JsonObject->TryGetStringField(TEXT("ValidCode"), DepenArr.ValidCode))
 		{
 			bSuccessed = false;
 		}
@@ -132,7 +137,7 @@ bool SimpleDataType::ConvertStringToStruct(const FString& Json, FDependenList& D
 	return bSuccessed;
 }
 
-void SimpleDataType::ConvertStructToString(const FInstanceInfo& InstInfo, FString& Json)
+void SimpleFtpDataType::ConvertStructToString(const FInstanceInfo& InstInfo, FString& Json)
 {
 	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
 	JsonWriter->WriteObjectStart();
@@ -160,7 +165,7 @@ void SimpleDataType::ConvertStructToString(const FInstanceInfo& InstInfo, FStrin
 	JsonWriter->Close();
 }
 
-bool SimpleDataType::ConvertStringToStruct(const FString& Json, FInstanceInfo& InstInfo)
+bool SimpleFtpDataType::ConvertStringToStruct(const FString& Json, FInstanceInfo& InstInfo)
 {
 	bool bSuccessed = true;
 	TSharedPtr<FJsonValue> JsonParsed;

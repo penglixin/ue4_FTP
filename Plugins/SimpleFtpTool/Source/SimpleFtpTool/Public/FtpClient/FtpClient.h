@@ -65,8 +65,11 @@ public:
 	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FInvalidDepInfo>& NotValidDependences, bool bAllNameValid = false);
 	//上传文件以及依赖文件 传入资源的PackageName数组
 	bool UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames);
-	//判断服务器上是否存在该资源
+	//判断服务器上是否存在该资源（发送SIZE 命令，根据服务器返回的响应码判断文件是否存在，然后再根据用户做出的选择是否覆盖服务器文件，这一步并没有使用到校验码）
 	bool OverrideAssetOnServer(const FString& FileFullPath);
+	//判断服务器文件的校验码跟本地文件校验码是否一致
+	bool IsValidCodeSame(const FString& FileFullPath);
+	//
 
 private:
 	//接受服务端返回的消息

@@ -23,6 +23,16 @@ public:
 	//布局
 	TSharedRef<SWidget> CreateEditor();
 
+	template<class T>
+	T* StaticLoadObjectFromCache(const FString& InFileName) //FileName : Instance/ProjA/Ins_StaticMesh/mesh1.uasset
+	{
+		FString FileName = TEXT("/Game/") + InFileName;  //转换成 PackageName
+		//StaticMesh'/Game/Com_StaticMesh/Mat_wood_7_de.Mat_wood_7_de'
+		const FString ObjectName = T::StaticClass()->GetName() + TEXT("'") + FileName + TEXT(".") + FPackageName::GetShortName(FileName) + TEXT("'");
+		T* ObjInstance = Cast<T>(StaticLoadObject(T::StaticClass(), nullptr, *ObjectName));
+		return ObjInstance;
+	}
+
 private:
 
 	void AddToolbarExtension(FToolBarBuilder& Builder);

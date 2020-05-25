@@ -75,7 +75,7 @@ void FtpClientManager::ShowMessageBox(const TArray<FString>& NameNotValidFiles, 
 		{
 			AllStr += TEmpNameNotValid + TEXT("\n");
 		}
-		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("The following asset name is not valid:\n" + AllStr));
+		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("The following asset name is not valid:\n\n" + AllStr));
 	}
 	if (DepenNotValidFiles.Num())
 	{
@@ -213,19 +213,20 @@ bool FtpClientManager::ReceiveData(FSocket* sock, FString& RecvMesg, TArray<uint
 	uint8 element = 0;
 	while (sock->HasPendingData(size))
 	{
-		RecvData.Init(element, FMath::Min(size, 65507u));
+		RecvData.Init(element, FMath::Min(size, 65536u));
 		int32 read = 0;
 		sock->Recv(RecvData.GetData(), RecvData.Num(), read);
+		dataArray += RecvData;
 	}
-	if (RecvData.Num() <= 0)
+	if (dataArray.Num() <= 0)
 	{
 		RecvMesg = TEXT("Error : RecvData is empty.");
 		Print(RecvMesg);
 		return false;
 	}
-	const FString ReceivedUE4String = BinaryArrayToString(RecvData);
+	const FString ReceivedUE4String = BinaryArrayToString(dataArray);
 	RecvMesg = ReceivedUE4String;
-	dataArray = RecvData;
+	//dataArray = RecvData;
 	if(sock == controlSocket)
 	{
 		//获取响应码
@@ -560,7 +561,7 @@ bool FtpClientManager::FileNameValidationOfOneFolder(TArray<FString>& NoValidFil
 	FDataInfoList InfoList;
 	FFileHelper::LoadFileToString(JsonStr, *DataTypeIni);
 	JsonStr.ToUpperInline();
-	if (!SimpleDataType::ConvertStringToStruct(JsonStr, InfoList))
+	if (!SimpleFtpDataType::ConvertStringToStruct(JsonStr, InfoList))
 		return false;
 
 	GetAllFileFromLocalPath(InFullFolderPath, AllFilePaths, true);
@@ -750,7 +751,7 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 				FString ModifyTime = ConvertTimeToStr(DataTime1);
 				FFileHelper::LoadFileToString(Json, *FileName);
 				//这里是为了判断资源的依赖有没有发生改变，没改变就不重新生成校验码，不重新创建.dep文件
-				if (SimpleDataType::ConvertStringToStruct(Json, depenlist))
+				if (SimpleFtpDataType::ConvertStringToStruct(Json, depenlist))
 				{
 					if (!ModifyTime.Equals(depenlist.LastModifyTime))
 					{
@@ -883,6 +884,38 @@ bool FtpClientManager::OverrideAssetOnServer(const FString& FileFullPath)
 	}
 	//不存在 直接上传
 	return bUpload;
+}
+
+bool FtpClientManager::IsValidCodeSame(const FString& FileFullPath)
+{
+	//假设本地依赖文件已经生成好
+	bool bIsSame = true;
+	FString DepLocalFullPath = FileFullPath;
+	DepLocalFullPath.ReplaceInline(TEXT(".uasset"), *(GetDefault<UFtpConfig>()->Suffix));
+	FString DepServerPath = DepLocalFullPath;
+	DepServerPath.RemoveFromStart(FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()));
+	FString LocalValidCode;
+	FString ServerValidCode;
+	FString Json;
+	FDependenList DepInfo;
+	FFileHelper::LoadFileToString(Json, *DepLocalFullPath);
+	if (SimpleFtpDataType::ConvertStringToStruct(Json, DepInfo))
+	{
+		LocalValidCode = DepInfo.ValidCode;
+	}
+	if (FTP_DownloadOneFile(DepServerPath, GetDefault<UFtpConfig>()->CachePath.Path))
+	{
+		Json.Empty();
+		DepInfo.Empty();
+		FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + TEXT("/") + DepServerPath;
+		FFileHelper::LoadFileToString(Json, *DepCachePath);
+		if (SimpleFtpDataType::ConvertStringToStruct(Json, DepInfo))
+		{
+			ServerValidCode = DepInfo.ValidCode;
+		}
+		IFileManager::Get().Delete(*DepCachePath);  //删除缓存
+	}
+	return ServerValidCode.Equals(LocalValidCode);
 }
 
 
@@ -1056,7 +1089,8 @@ bool FtpClientManager::FTP_DownloadOneFile(const FString& serverFileName, const 
 		bSuccessed = false;
 		goto _Program_Endl;
 	}
-	ReceiveData(dataSocket, Mesg, RecvBinary); 
+	ReceiveData(dataSocket, Mesg, RecvBinary);
+	//dataSocket->Recv(RecvBinary.GetData(), 327680,)
 	if(FFileHelper::SaveArrayToFile(RecvBinary, *FileSaveName))
 	{
 		Print("Download succeed!",100.f,FColor::Purple);
@@ -1086,9 +1120,9 @@ bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder, const FStr
 	case EFileType::FOLDER:
 		if(FTP_ListFile(serverFolder, FileArr, false))
 		{
-			for (const auto& Tempfilaname : FileArr)
+			for (const auto& Tempfilename : FileArr)
 			{
-				bSuccessed = FTP_DownloadOneFile(Tempfilaname,localSavePath);
+				bSuccessed = FTP_DownloadOneFile(Tempfilename,localSavePath);
 				if (!bSuccessed)
 					return false;
 			}
@@ -1112,7 +1146,6 @@ bool FtpClientManager::FTP_UploadOneFile(const FString& localFileName)
 	{
 		return true;
 	}
-
 	//数据连接发送文件内容:先把文件转换成二进制数据，再通过datasocket发送
 	TArray<uint8> sendData;
 	if (!FFileHelper::LoadFileToArray(sendData, *localFileName))
@@ -1141,7 +1174,6 @@ _Program_Endl:
 	{
 		dataSocket->Close();
 		dataSocket = nullptr;
-
 		FString Mesg;
 		TArray<uint8> RecvBinary;
 		//接收服务端发出的 226 Successfully transferred "/ceshi.uasset" 消息  这条消息在数据控制断开的时候服务端才会发送
@@ -1171,8 +1203,11 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 	{
 		for (const auto& tempchild : ChildrenFolders)
 		{
-			if (!FileNameValidationOfOneFolder(NameNotValidFiles, tempchild))
-				bAllValid = false;
+			if (tempchild.Contains(TEXT("Com_")) || tempchild.Contains(TEXT("Ins_")))
+			{
+				if (!FileNameValidationOfOneFolder(NameNotValidFiles, tempchild))
+					bAllValid = false;
+			}
 		}
 	}
 	else
@@ -1211,7 +1246,7 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 			FString Json;
 			FDependenList depenlist;
 			FFileHelper::LoadFileToString(Json, *tempdepenfile);
-			if (SimpleDataType::ConvertStringToStruct(Json, depenlist))
+			if (SimpleFtpDataType::ConvertStringToStruct(Json, depenlist))
 			{
 				for (const auto& tempdep : depenlist.DepenArr)
 				{
@@ -1265,7 +1300,7 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 	FDataInfoList InfoList;
 	FFileHelper::LoadFileToString(JsonStr, *DataTypeIni);
 	JsonStr.ToUpperInline();
-	if (!SimpleDataType::ConvertStringToStruct(JsonStr, InfoList))
+	if (!SimpleFtpDataType::ConvertStringToStruct(JsonStr, InfoList))
 		return false;
 	//检查命名
 	for (auto pakname : InPackNames)
@@ -1382,7 +1417,7 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 			FString Json;
 			FDependenList depenlist;
 			FFileHelper::LoadFileToString(Json, *FileName);
-			if (SimpleDataType::ConvertStringToStruct(Json, depenlist))
+			if (SimpleFtpDataType::ConvertStringToStruct(Json, depenlist))
 			{
 				for (const auto& tempdep : depenlist.DepenArr)
 				{
@@ -1398,9 +1433,9 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 
 bool FtpClientManager::ftp_test(const FString& InFolderPath, FDateTime& DataTime)
 {
-	DataTime = IFileManager::Get().GetTimeStamp(*InFolderPath);
-	OverrideAssetOnServer(InFolderPath);
-	return false;
+	//DataTime = IFileManager::Get().GetTimeStamp(*InFolderPath);
+	//OverrideAssetOnServer(InFolderPath);
+	return IsValidCodeSame(InFolderPath);
 	//DeleteFileOrFolder(InFolderPath);
 }
 
@@ -1411,3 +1446,4 @@ bool FtpClientManager::ftp_test(const FString& InFolderPath, FDateTime& DataTime
 #pragma optimize("",on)
 #endif
 #endif
+

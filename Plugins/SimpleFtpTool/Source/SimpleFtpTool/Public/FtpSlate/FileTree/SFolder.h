@@ -17,6 +17,9 @@ public:
 
 	const FSlateBrush* GetFileTypeICO() const;
 
+	FReply OnClicked();
+
 private:
 	TSharedPtr<class SExpandableArea> Area;
+	FString FolderName;
 };

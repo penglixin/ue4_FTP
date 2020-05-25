@@ -121,6 +121,9 @@ struct FDependenList
 		FString LastModifyTime;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		FString ValidCode;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
 		TArray<FDependenceInfo> DepenArr;
 
 	void Empty();
@@ -159,7 +162,7 @@ struct FInstanceInfo
 };
 
 
-namespace SimpleDataType
+namespace SimpleFtpDataType
 {
 	void ConvertStructToString(const FDataInfoList& TypeArr, FString& Json);
 	bool ConvertStringToStruct(const FString& Json, FDataInfoList& TypeArr);

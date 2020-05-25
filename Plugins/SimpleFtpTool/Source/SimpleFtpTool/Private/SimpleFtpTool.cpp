@@ -98,6 +98,11 @@ void FSimpleFtpToolModule::StartupModule()
 		GMeshComponent = NewObject<UStaticMeshComponent>();
 		GMeshComponent->AddToRoot();
 	}
+	if (!GProceduralMeshComponent)
+	{
+		GProceduralMeshComponent = NewObject<UProceduralMeshComponent>();
+		GProceduralMeshComponent->AddToRoot();
+	}
 
 	SimpleOneParamDelegate.BindRaw(this, &FSimpleFtpToolModule::UpdateFiles);
 }
@@ -112,9 +117,13 @@ void FSimpleFtpToolModule::ShutdownModule()
 	if (GMeshComponent)
 	{
 		GMeshComponent->ConditionalBeginDestroy();
+		//GMeshComponent = nullptr;
 	}
-	GMeshComponent = nullptr;
-
+	if (GProceduralMeshComponent)
+	{
+		GProceduralMeshComponent->ConditionalBeginDestroy();
+		//GProceduralMeshComponent = nullptr;
+	}
 }
 
 TSharedRef<SDockTab> FSimpleFtpToolModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
@@ -320,6 +329,7 @@ void FSimpleFtpToolModule::CreateInstanceFolder(TArray<FString> NewPaths)
 
 void FSimpleFtpToolModule::SubmitSourceUnderTheFolder(TArray<FString> NewPaths)
 {
+
 	TArray<FString> NameNotValidFiles;
 	TArray<FInvalidDepInfo> DepenNotValidFiles;
 	bool bUploadSuccess = true;
@@ -382,20 +392,10 @@ void FSimpleFtpToolModule::SubmitSelectedSource(TArray<FString> NewPaths)
 
 void FSimpleFtpToolModule::PluginButtonClicked()
 {
-	/*	Com_Material/Mat_pp_1_sd1.dep
-		Com_Material/Mat_pp_1_sd1.uasset
-		Instance/ProjD/Ins_Material/Mat_pp_0_sd.dep
-		Instance/ProjD/Ins_Material/Mat_pp_0_sd.uasset
-	*/
-	TArray<FString> FileNames;
-	FileNames.Add(TEXT("Com_Material/Mat_pp_1_sd1.dep"));
-	FileNames.Add(TEXT("Com_Material/Mat_pp_1_sd1.uasset"));
-	FileNames.Add(TEXT("Instance/ProjD/Ins_Material/Mat_pp_0_sd.dep"));
-	FileNames.Add(TEXT("Instance/ProjD/Ins_Material/Mat_pp_0_sd.uasset"));
-	
 	FGlobalTabmanager::Get()->InvokeTab(SimpleFtpToolTabName);
 
-
+	TArray<FString> FileNames;
+	FTP_INSTANCE->FTP_ListFile(TEXT(""), FileNames);
 	SimpleOneParamDelegate.ExecuteIfBound(FileNames);
 }
 
@@ -421,7 +421,6 @@ TSharedRef<SWidget> FSimpleFtpToolModule::CreateEditor()
 			FTabManager::NewPrimaryArea()->SetOrientation(Orient_Horizontal)
 			->Split
 			(
-
 				FTabManager::NewStack()
 				->SetSizeCoefficient(0.4f)
 				->SetHideTabWell(true)

@@ -1,6 +1,13 @@
 #include "FtpSlate/FileTree/FilePrasing.h"
 #include "Misc/App.h"
 
+#if WITH_EDITOR
+#if PLATFORM_WINDOWS
+#pragma optimize("",off)
+#endif
+#endif
+
+
 SimpleFtpFile::EFileType SimpleFtpFile::FFileList::GetFileType() const
 {
 	return Filename.Contains(TEXT(".")) ? EFileType::FILE : EFileType::FOLDER;
@@ -15,20 +22,26 @@ void SimpleFtpFile::FilesParsing(const TArray<FString>& Filenames, FFileList& Li
 	*/
 	FFileList* FileList = &List;
 	FileList->Filename = FApp::GetProjectName();
-	for (const auto& Filename : Filenames)
+	for (const auto& tempFilename : Filenames)
 	{
 		TArray<FString> FileLevel;
-		Filename.ParseIntoArray(FileLevel, TEXT("/"));
+		tempFilename.ParseIntoArray(FileLevel, TEXT("/"));
 
 		FileList = &List;
 		for (const auto& TmpFile : FileLevel)
 		{
 			FFileList FileListElement;
 			FileListElement.Filename = TmpFile;
-			int32 i = FileList->Children.AddUnique(FileListElement);
-			FileList = &(FileList->Children[i]);
+			int32 index = FileList->Children.AddUnique(FileListElement);
+			FileList = &(FileList->Children[index]);
 		}
-		FileList->Filename = Filename;
+		FileList->Filename = tempFilename;
 	}
-
 }
+
+
+#if WITH_EDITOR
+#if PLATFORM_WINDOWS
+#pragma optimize("",on)
+#endif
+#endif

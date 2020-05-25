@@ -15,9 +15,9 @@ public:
 
 	void Construct(const FArguments& InArgs, const SimpleFtpFile::FFileList& FileList);
 
-	FReply OnClicked();
+	FReply OnClicked();	
 
 private:
 
-	FString AssetPaths;
+	FString AssetPath;
 };

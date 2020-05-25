@@ -30,6 +30,9 @@ public:
 
 	UPROPERTY(config, EditAnywhere, Category = "FtpInstProjectName", meta = (ToolTip = "the name of instance."))
 		FString InsProjectName;
+
+	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the description for this submit."))
+		FString SubmitDescription;
 	
 	UPROPERTY(config, EditAnyWhere, Category = "FtpDepCachePath", meta = (ToolTip = "the path to save server dep file."))
 		FDirectoryPath CachePath;

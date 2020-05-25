@@ -109,6 +109,7 @@ break
 bDepHasChanged = true; \
 depenlist.Empty();\
 depenlist.SourceAssetName = AssetPackName;\
+depenlist.ValidCode = FGuid::NewGuid().ToString();\
 for (const auto& temp : TheAssetDependence)\
 {\
 	FDependenceInfo OneInfo;\
@@ -118,7 +119,7 @@ for (const auto& temp : TheAssetDependence)\
 }\
 FDateTime DataTime = IFileManager::Get().GetTimeStamp(*UAssetName);\
 depenlist.LastModifyTime = ConvertTimeToStr(DataTime);\
-SimpleDataType::ConvertStructToString(depenlist, Json);\
+SimpleFtpDataType::ConvertStructToString(depenlist, Json);\
 FFileHelper::SaveStringToFile(Json, *FileName)
 
 
@@ -136,5 +137,5 @@ for (const auto& temp : AllDependences)\
 		InstInfo.ThirdPartyAssetPackageName.Add(temp);\
 	}\
 }\
-SimpleDataType::ConvertStructToString(InstInfo, Json);\
+SimpleFtpDataType::ConvertStructToString(InstInfo, Json);\
 FFileHelper::SaveStringToFile(Json, *InstConfigName)

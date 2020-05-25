@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/StaticMeshComponent.h"
+//#include "Components/SkeletalMeshComponent.h"
 #include "ProceduralMeshComponent.h"
 
 
