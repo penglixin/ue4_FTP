@@ -36,4 +36,7 @@ public:
 	
 	UPROPERTY(config, EditAnyWhere, Category = "FtpDepCachePath", meta = (ToolTip = "the path to save server dep file."))
 		FDirectoryPath CachePath;
+
+	UPROPERTY(config, EditAnyWhere, Category = "FtpAssetDownloadPath", meta = (ToolTip = "the path to save server dep file."))
+		FDirectoryPath DownloadPath;
 };

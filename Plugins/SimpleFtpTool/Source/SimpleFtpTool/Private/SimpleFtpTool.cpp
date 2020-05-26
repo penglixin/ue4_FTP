@@ -38,6 +38,7 @@ const FName FSimpleFtpViewID::FiletreeID(TEXT("UnrealPakFiletreeID"));
 
 #define LOCTEXT_NAMESPACE "FSimpleFtpToolModule"
 
+
 void FSimpleFtpToolModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
@@ -128,12 +129,6 @@ void FSimpleFtpToolModule::ShutdownModule()
 
 TSharedRef<SDockTab> FSimpleFtpToolModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	FText WidgetText = FText::Format(
-		LOCTEXT("WindowWidgetText", "Add code to {0} in {1} to override this window's contents"),
-		FText::FromString(TEXT("FSimpleFtpToolModule::OnSpawnPluginTab")),
-		FText::FromString(TEXT("SimpleFtpTool.cpp"))
-		);
-
 	return SNew(SDockTab)
 		.TabRole(ETabRole::NomadTab)
 		[
@@ -161,7 +156,7 @@ void FSimpleFtpToolModule::CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuil
 	bool bCanSubmit = true;
 	for (const auto& Temp : NewPaths)
 	{
-		if (Temp.Equals("/Game") || Temp.Equals("/Game/Map") || Temp.Equals("/Game/Instance") || Temp.Contains("/Ins_"))   //只能提交实例文件夹，以及公共文件夹
+		if (Temp.Equals("/Game") || Temp.Equals("/Game/Map") || Temp.Equals("/Game/Instance") || Temp.Contains("/Ins_"))   //只能提交实例文件夹，以及公共文件夹 **第三方资源文件也可以提交但是要整个文件夹一起提交
 		{
 			bCanSubmit = false;
 			break;
@@ -215,7 +210,7 @@ void FSimpleFtpToolModule::CreateSubMenuForAssetBrowser(FMenuBuilder& MenuBuilde
 	bool bCanSubmit = true;
 	for (const auto& temp : NewPaths)
 	{
-		if (temp.Contains(TEXT("/Ins_")))  //只能提交公共文件夹下的Asset
+		if (!temp.Contains(TEXT("/Com_")))  //只能提交公共文件夹下的Asset
 		{
 			bCanSubmit = false;
 			break;
@@ -329,7 +324,6 @@ void FSimpleFtpToolModule::CreateInstanceFolder(TArray<FString> NewPaths)
 
 void FSimpleFtpToolModule::SubmitSourceUnderTheFolder(TArray<FString> NewPaths)
 {
-
 	TArray<FString> NameNotValidFiles;
 	TArray<FInvalidDepInfo> DepenNotValidFiles;
 	bool bUploadSuccess = true;
@@ -366,7 +360,7 @@ void FSimpleFtpToolModule::CheckNameAndGenerateDependencyFiles(TArray<FString> N
 		{
 			for (const auto& tempchild : ChildrenFolders)
 			{
-				if (!FTP_INSTANCE->FileNameValidationOfOneFolder(NameNotValid, tempchild))
+				if(!FTP_INSTANCE->FileNameValidationOfOneFolder(NameNotValid, tempchild))
 					bAllNameValid = false;
 			}
 		}
@@ -388,6 +382,34 @@ void FSimpleFtpToolModule::SubmitSelectedSource(TArray<FString> NewPaths)
 	TArray<FString> NameNotValidFiles;
 	TArray<FInvalidDepInfo> DepenNotValidFiles;
 	FTP_INSTANCE->FTP_UploadFilesByAsset(NewPaths, NameNotValidFiles, DepenNotValidFiles);
+}
+
+void FSimpleFtpToolModule::SubmitSelectThirdParty(TArray<FString> NewPaths)
+{
+	//第三方文件夹就不用检查命名  需要检车依赖
+	TArray<FInvalidDepInfo> NotValidDependences;
+	bool bAllValid = true;
+	for(const auto& temp : NewPaths)
+	{
+		if (!FTP_INSTANCE->ValidationAllDependenceOfTheFolder(temp, NotValidDependences, false))
+			bAllValid = false;
+	}
+	TArray<FString> EmptyArr;
+	FTP_INSTANCE->ShowMessageBox(EmptyArr, NotValidDependences);
+	if (bAllValid)
+	{
+		FString ContentPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+		for (FString temp : NewPaths)
+		{
+			temp.ReplaceInline(TEXT("/Game/"),*(ContentPath));
+			TArray<FString> ContentAssetPaths;
+			IFileManager::Get().FindFilesRecursive(ContentAssetPaths, *temp, TEXT("*"), true, false);
+			for (const auto tempfile : ContentAssetPaths)
+			{
+				FTP_INSTANCE->FTP_UploadOneFile(tempfile);
+			}
+		}
+	}
 }
 
 void FSimpleFtpToolModule::PluginButtonClicked()

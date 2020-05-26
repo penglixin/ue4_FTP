@@ -139,3 +139,49 @@ for (const auto& temp : AllDependences)\
 }\
 SimpleFtpDataType::ConvertStructToString(InstInfo, Json);\
 FFileHelper::SaveStringToFile(Json, *InstConfigName)
+
+
+#define GET_ASSET_VALIDCODE()\
+if (IFileManager::Get().FileExists(*DepLocalFullPath))\
+{\
+	FFileHelper::LoadFileToString(Json, *DepLocalFullPath);\
+	if (SimpleFtpDataType::ConvertStringToStruct(Json, DepInfo))\
+	{\
+		LocalValidCode = DepInfo.ValidCode;\
+	}\
+	if (FTP_DownloadOneFile(DepServerPath, GetDefault<UFtpConfig>()->CachePath.Path))\
+	{\
+		Json.Empty();\
+		DepInfo.Empty();\
+		FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + TEXT("/") + DepServerPath;\
+		FFileHelper::LoadFileToString(Json, *DepCachePath);\
+		if (SimpleFtpDataType::ConvertStringToStruct(Json, DepInfo))\
+		{\
+			ServerValidCode = DepInfo.ValidCode;\
+		}\
+		IFileManager::Get().Delete(*DepCachePath);\
+	}\
+}
+
+
+#define GET_INST_VALIDCODE()\
+if (IFileManager::Get().FileExists(*localfilename))\
+{\
+	FFileHelper::LoadFileToString(Json, *localfilename);\
+	if (SimpleFtpDataType::ConvertStringToStruct(Json, instInfo))\
+	{\
+		LocalValidCode = instInfo.InstValidCode;\
+	}\
+}\
+if (FTP_DownloadOneFile(serverfilename, GetDefault<UFtpConfig>()->CachePath.Path))\
+{\
+	Json.Empty();\
+	instInfo.Empty();\
+	FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + TEXT("/") + serverfilename;\
+	FFileHelper::LoadFileToString(Json, *DepCachePath);\
+	if (SimpleFtpDataType::ConvertStringToStruct(Json, instInfo))\
+	{\
+		ServerValidCode = instInfo.InstValidCode;\
+	}\
+	IFileManager::Get().Delete(*DepCachePath); \
+}

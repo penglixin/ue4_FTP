@@ -16,6 +16,16 @@
 #endif
 
 
+//判断 资源 是否属于第三方资源
+bool IsThirdPartyAsset(const FString& InAssetpath)
+{
+	//不包含 “/Com_” 、“/Ins_”
+	if (!InAssetpath.Contains(TEXT("/Com_")) && !InAssetpath.Contains(TEXT("/Ins_")))
+		return true;
+	else
+		return false;
+}
+
 //传入文件路径，获取文件大小
 int64_t getFileSize(const FString& InfilePath)
 {
@@ -683,13 +693,14 @@ void FtpClientManager::RecursiveFindDependence(const FString& InPackageName, TAr
 bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath, const FString& AssetPackName, const TArray<FString>& TheAssetDependence, FInvalidDepInfo& InvalidInfo, bool& bDepHasChanged, bool bAllNameValid)
 {
 	bool bValid = true;
+	bDepHasChanged = false;
 	//公共资源依赖检查
 	if (InGamePath.Contains(TEXT("Com_")))
 	{
 		for (const auto& TempDep : TheAssetDependence)
 		{
-			//公共资源不能引用其他实例
-			if(TempDep.Contains("/Ins_") || TempDep.Contains(TEXT("/Engine/")))
+			//公共资源不能引用其他实例 以及第三方
+			if(!TempDep.Contains("/Com_"))  // || TempDep.Contains(TEXT("/Engine/")) || TempDep.Contains(TEXT("/Script/")) || IsThirdPartyAsset(TempDep))
 			{
 				bValid = false;
 				InvalidInfo.DepInvalidAssetName = AssetPackName;
@@ -697,13 +708,14 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 			}
 		}
 	}
-	else 
+	//实例
+	else if(InGamePath.Contains(TEXT("/Instance/")))
 	{
 		//实例资源依赖检查
 		FString InstName = FPaths::GetCleanFilename(InGamePath);
 		for (const auto& TempDep : TheAssetDependence)
 		{
-			if (TempDep.Contains("/Engine/"))
+			if (TempDep.Contains("/Engine/") || TempDep.Contains(TEXT("/Script/")))
 			{
 				bValid = false;
 				InvalidInfo.DepInvalidAssetName = AssetPackName;
@@ -721,7 +733,20 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 			}
 		}
 	}
-	//保存依赖文件  Json格式，并且为每一个依赖资源生成一个32位校验码  就算存在不合法的依赖也会生成依赖文件
+	//第三方 
+	else
+	{
+		for (const auto& TempDep : TheAssetDependence)
+		{
+			if (TempDep.Contains("/Com_") || TempDep.Contains(TEXT("/Ins_")))
+			{
+				bValid = false;
+				InvalidInfo.DepInvalidAssetName = AssetPackName;
+				InvalidInfo.InvalidDepAsset.Add(TempDep);
+			}
+		}
+	}
+	//保存依赖文件  Json格式，并且为 公共文件夹下 每一个依赖资源生成一个32位校验码  就算存在不合法的依赖也会生成依赖文件
 	if (bAllNameValid)
 	{
 		auto ConvertTimeToStr = [](const FDateTime& DataTime) ->FString
@@ -755,13 +780,13 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 				{
 					if (!ModifyTime.Equals(depenlist.LastModifyTime))
 					{
-						GENERATE_DEP_FILE();
+							GENERATE_DEP_FILE();
 					}
 				}
 			}
 			else
 			{
-				GENERATE_DEP_FILE();
+					GENERATE_DEP_FILE();
 			}
 		}
 	}
@@ -861,68 +886,103 @@ bool FtpClientManager::OverrideAssetOnServer(const FString& FileFullPath)
 {
 	bool bUpload = true;
 	FString FileNameOnServer = FileFullPath;
-	FileNameOnServer.RemoveFromStart(FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()));
-	FTP_SendCommand(EFtpCommandType::SIZE, FileNameOnServer);
-	if (FILE_EXIST == ResponseCode)
+	if (FileNameOnServer.Contains(TEXT("Com_")))   //只有公共文件夹下的资源才需要一个一个检测，如果下载实例文件夹的或只需要验证 实例.dep 文件的校验码
 	{
-		//文件存在 弹框提示是否覆盖服务器
-		EAppReturnType::Type returntype;
-		FString OptionStr = TEXT("the file '") + FileNameOnServer + TEXT("' is already exist on server, override it?");
-		returntype = FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(OptionStr));
-		switch (returntype)
+		FileNameOnServer.RemoveFromStart(FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()));
+		FTP_SendCommand(EFtpCommandType::SIZE, FileNameOnServer);
+		if (FILE_EXIST == ResponseCode)
 		{
-		case EAppReturnType::Type::Yes:
-			bUpload = true;
-			break;
-		case EAppReturnType::Type::No:
-			bUpload = false;
-			break;
-		default:
-			bUpload = false;
-			break;
+			//文件存在 弹框提示是否覆盖服务器
+			EAppReturnType::Type returntype;
+			FString OptionStr = TEXT("the file  '") + FileNameOnServer + TEXT("'  is already exist on server, override it?");
+			returntype = FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(OptionStr));
+			switch (returntype)
+			{
+			case EAppReturnType::Type::Yes:
+				bUpload = true;
+				break;
+			case EAppReturnType::Type::No:
+				bUpload = false;
+				break;
+			default:
+				bUpload = false;
+				break;
+			}
 		}
 	}
 	//不存在 直接上传
 	return bUpload;
 }
 
-bool FtpClientManager::IsValidCodeSame(const FString& FileFullPath)
+bool FtpClientManager::IsAssetValidCodeSame(const FString& FileFullPath)
 {
-	//假设本地依赖文件已经生成好
-	bool bIsSame = true;
-	FString DepLocalFullPath = FileFullPath;
-	DepLocalFullPath.ReplaceInline(TEXT(".uasset"), *(GetDefault<UFtpConfig>()->Suffix));
-	FString DepServerPath = DepLocalFullPath;
-	DepServerPath.RemoveFromStart(FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()));
 	FString LocalValidCode;
 	FString ServerValidCode;
+	FString DepLocalFullPath;
+	FString DepServerPath;
 	FString Json;
 	FDependenList DepInfo;
-	FFileHelper::LoadFileToString(Json, *DepLocalFullPath);
-	if (SimpleFtpDataType::ConvertStringToStruct(Json, DepInfo))
+	//公共文件夹下的资源才会校验各个资源的校验码
+	if (FileFullPath.Contains(TEXT("/Com_")))
 	{
-		LocalValidCode = DepInfo.ValidCode;
-	}
-	if (FTP_DownloadOneFile(DepServerPath, GetDefault<UFtpConfig>()->CachePath.Path))
-	{
-		Json.Empty();
-		DepInfo.Empty();
-		FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + TEXT("/") + DepServerPath;
-		FFileHelper::LoadFileToString(Json, *DepCachePath);
-		if (SimpleFtpDataType::ConvertStringToStruct(Json, DepInfo))
+		if (FileFullPath.Contains(TEXT(":")))
 		{
-			ServerValidCode = DepInfo.ValidCode;
+			//上传 传入资源绝对路径
+			DepLocalFullPath = FileFullPath;
+			DepLocalFullPath.ReplaceInline(TEXT(".uasset"), *(GetDefault<UFtpConfig>()->Suffix));
+			DepServerPath = DepLocalFullPath;
+			DepServerPath.RemoveFromStart(FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()));
+			GET_ASSET_VALIDCODE()
 		}
-		IFileManager::Get().Delete(*DepCachePath);  //删除缓存
+		else
+		{
+			//下载
+			// Com_Material/Mat_wood_0_sad.uasset
+			DepServerPath = FileFullPath.Replace(TEXT(".uasset"), *(GetDefault<UFtpConfig>()->Suffix));
+			DepLocalFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) + DepServerPath;
+			GET_ASSET_VALIDCODE()
+		}
+	}	
+	return (LocalValidCode.Equals(ServerValidCode)) && !(LocalValidCode.IsEmpty());
+}
+
+bool FtpClientManager::IsInstValidCodeSame(const FString& InstName)
+{
+	FString LocalValidCode;
+	FString ServerValidCode;
+	FString localfilename;
+	FString serverfilename;
+	FString clearnnaem = FPaths::GetCleanFilename(InstName);
+	FString Json;
+	FInstanceInfo instInfo;
+	if (InstName.Contains(TEXT("/Game/")))
+	{
+		//上传  传入的是 /Game/Instance/ProjA
+		//转换成绝对路径，获取ProjA.dep
+		localfilename = InstName;
+		serverfilename = InstName / clearnnaem + GetDefault<UFtpConfig>()->Suffix;
+		serverfilename.RemoveFromStart(TEXT("/Game/"));
+		FString ProjContent = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+		localfilename.ReplaceInline(TEXT("/Game/"), *ProjContent);
+		localfilename += TEXT("/") + clearnnaem + GetDefault<UFtpConfig>()->Suffix;
+		GET_INST_VALIDCODE()
 	}
-	return ServerValidCode.Equals(LocalValidCode);
+	else
+	{
+		//下载 传入的是 Instance/ProjA
+		serverfilename = InstName / clearnnaem + GetDefault<UFtpConfig>()->Suffix;
+		localfilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) + InstName / clearnnaem + GetDefault<UFtpConfig>()->Suffix;
+		GET_INST_VALIDCODE()
+	}
+	//校验码不为空，并且相等
+	return (LocalValidCode.Equals(ServerValidCode)) && !(LocalValidCode.IsEmpty());
 }
 
 
 /******************************************************************************/
 /******************************************************************************/
 /******************************************************************************/
-bool FtpClientManager::FTP_CreateControlSocket(FString IP,  int32 port)
+bool FtpClientManager::FTP_CreateControlSocket(const FString& IP, const int32& port)
 { 
 	if(controlSocket)
 	{
@@ -1090,7 +1150,6 @@ bool FtpClientManager::FTP_DownloadOneFile(const FString& serverFileName, const 
 		goto _Program_Endl;
 	}
 	ReceiveData(dataSocket, Mesg, RecvBinary);
-	//dataSocket->Recv(RecvBinary.GetData(), 327680,)
 	if(FFileHelper::SaveArrayToFile(RecvBinary, *FileSaveName))
 	{
 		Print("Download succeed!",100.f,FColor::Purple);
@@ -1226,16 +1285,26 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		return false;
 	}
 	TArray<FString> localFiles;  //本地路径下的所有文件 包括生成的依赖文件
+	TArray<FString> uploadfiles;  //需要上传的文件 如果是实例的话 就不用上传里面资源的依赖文件，公共文件夹的话就需要上传资源的依赖文件
 	TArray<FString> depenfile;
 	DeleteUselessFile();
 	if (GetAllFileFromLocalPath(FullPath, localFiles))
 	{
-		//上传资源 以及依赖文件
 		for (const auto& Tempfilename : localFiles)
+		{
+			if (Tempfilename.Contains(TEXT("Ins_")) && Tempfilename.Contains(GetDefault<UFtpConfig>()->Suffix))
+			{
+				//实例文件夹下的依赖文件
+				continue;
+			}
+			uploadfiles.Add(Tempfilename);
+		}
+		//上传资源 以及依赖文件
+		for (const auto& Tempfilename : uploadfiles)
 		{
 			if (Tempfilename.Contains(GetDefault<UFtpConfig>()->Suffix))
 				depenfile.Add(Tempfilename);
-			if (!FTP_UploadOneFile(Tempfilename))
+			if (!FTP_UploadOneFile (Tempfilename))
 				return false;
 		}
 		//找出依赖资源的PackageName
@@ -1245,13 +1314,25 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 			//将依赖文件（Json）格式，转换成结构体
 			FString Json;
 			FDependenList depenlist;
+			FInstanceInfo InstInfo;
 			FFileHelper::LoadFileToString(Json, *tempdepenfile);
 			if (SimpleFtpDataType::ConvertStringToStruct(Json, depenlist))
 			{
 				for (const auto& tempdep : depenlist.DepenArr)
 				{
-					if(!tempdep.DepenAssetPackName.Contains(FolderName))
+					if(!tempdep.DepenAssetPackName.Contains(FolderName))  //防止重复上传
 						DepenAssetPackName.AddUnique(tempdep.DepenAssetPackName);
+				}
+			}
+			else if (SimpleFtpDataType::ConvertStringToStruct(Json, InstInfo))
+			{
+				for (const auto& tempdep : InstInfo.CommonAssetPackageName)
+				{
+					DepenAssetPackName.AddUnique(tempdep);
+				}
+				for (const auto& tempdep : InstInfo.ThirdPartyAssetPackageName)
+				{
+					DepenAssetPackName.AddUnique(tempdep);
 				}
 			}
 		}
@@ -1388,10 +1469,10 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		FString AssetName = FPaths::GetCleanFilename(pakname);
 		if (PakPath.RemoveFromEnd(TEXT("/") + AssetName))
 		{
-			FInvalidDepInfo InvalidIfo;
-			if (!ValidationDependenceOfOneAsset(PakPath, pakname, OneAssetDependence, InvalidIfo, bDepHasChanged, bAllValid))
+			FInvalidDepInfo InvalidInfo;
+			if (!ValidationDependenceOfOneAsset(PakPath, pakname, OneAssetDependence, InvalidInfo, bDepHasChanged, bAllValid))
 			{
-				DepenNotValidFiles.Add(InvalidIfo);
+				DepenNotValidFiles.Add(InvalidInfo);
 				bAllValid = false;
 			}
 		}
@@ -1435,7 +1516,7 @@ bool FtpClientManager::ftp_test(const FString& InFolderPath, FDateTime& DataTime
 {
 	//DataTime = IFileManager::Get().GetTimeStamp(*InFolderPath);
 	//OverrideAssetOnServer(InFolderPath);
-	return IsValidCodeSame(InFolderPath);
+	return IsInstValidCodeSame(InFolderPath);
 	//DeleteFileOrFolder(InFolderPath);
 }
 

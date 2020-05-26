@@ -18,6 +18,15 @@ UFtpConfig::UFtpConfig()
 		}
 	}
 	
+	if (DownloadPath.Path.IsEmpty())
+	{
+		DownloadPath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+		if (!platform.DirectoryExists(*DownloadPath.Path))
+		{
+			platform.CreateDirectory(*DownloadPath.Path);
+		}
+	}
+
 	bShowServerMesg = true;
 	
 	Suffix = TEXT(".dep");

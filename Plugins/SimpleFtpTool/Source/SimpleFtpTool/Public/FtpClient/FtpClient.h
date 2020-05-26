@@ -29,7 +29,7 @@ public:
 	/*************************ftp客户端操作接口****************************/
 	/*********************************************************************/
 	//创建controlsocket
-	bool FTP_CreateControlSocket(FString IP = TEXT("127.0.0.1"), int32 port = 21);
+	bool FTP_CreateControlSocket(const FString& IP, const int32& port);
 	//发送指令
 	bool FTP_SendCommand(const EFtpCommandType& cmdtype, const FString& Param);
 	//需要用到数据连接的命令：NLST,LIST,RETR,STOR
@@ -67,9 +67,10 @@ public:
 	bool UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames);
 	//判断服务器上是否存在该资源（发送SIZE 命令，根据服务器返回的响应码判断文件是否存在，然后再根据用户做出的选择是否覆盖服务器文件，这一步并没有使用到校验码）
 	bool OverrideAssetOnServer(const FString& FileFullPath);
-	//判断服务器文件的校验码跟本地文件校验码是否一致
-	bool IsValidCodeSame(const FString& FileFullPath);
-	//
+	//校验资源校验码
+	bool IsAssetValidCodeSame(const FString& FileFullPath);
+	//校验实例校验码
+	bool IsInstValidCodeSame(const FString& InstName);
 
 private:
 	//接受服务端返回的消息
