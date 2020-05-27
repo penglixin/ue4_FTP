@@ -64,9 +64,7 @@ private:
 	void CheckNameAndGenerateDependencyFiles(TArray<FString> NewPaths);
 	//自定义菜单按钮点击事件 （提交选中的资源）
 	void SubmitSelectedSource(TArray<FString> NewPaths);
-
-	void SubmitSelectThirdParty(TArray<FString> NewPaths);
-
+	
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TSharedPtr<class SScrollBox> ScrollBox;

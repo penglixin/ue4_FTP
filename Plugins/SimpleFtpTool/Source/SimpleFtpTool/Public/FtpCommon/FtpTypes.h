@@ -149,8 +149,15 @@ struct FInstanceInfo
 {
 	GENERATED_USTRUCT_BODY()
 
+	FInstanceInfo()
+		:UploadAllAsset(false)
+	{}
+
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
 		FString InstValidCode;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
+		bool UploadAllAsset;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite)
 		TArray<FString> CommonAssetPackageName;
@@ -174,3 +181,8 @@ namespace SimpleFtpDataType
 	bool ConvertStringToStruct(const FString& Json, FInstanceInfo& InstInfo);
 
 }
+
+
+
+//Î¯ÍÐ
+DECLARE_DELEGATE_OneParam(FUploadThirdPartyDelegate, const FString&);

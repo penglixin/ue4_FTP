@@ -71,7 +71,11 @@ public:
 	bool IsAssetValidCodeSame(const FString& FileFullPath);
 	//校验实例校验码
 	bool IsInstValidCodeSame(const FString& InstName);
-
+	//检查实例是否依赖第三方资源 传入实例文件夹路径
+	void HasDepencyThirdAsset(const FString& InGamePath, TArray<FString>& ThirdPartyName);
+	//提交第三方文件夹
+	void UploadThirdPartyFolder(const FString& InFolder);
+	
 private:
 	//接受服务端返回的消息
 	bool ReceiveData(FSocket* sock, FString& RecvMesg, TArray<uint8>& dataArray, bool bSleep = true);
@@ -103,6 +107,9 @@ private:
 	FSocket* dataSocket;		//数据连接 :在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
 	FIPv4Address ipAddr;
 	
+	//委托 上传第三方资源包
+	FUploadThirdPartyDelegate UploadThirdPartyDelegate;
+
 private:
 	FString DataTypeIni;
 };

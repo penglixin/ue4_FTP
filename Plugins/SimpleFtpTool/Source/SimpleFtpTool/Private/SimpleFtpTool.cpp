@@ -153,12 +153,12 @@ TSharedRef<FExtender> FSimpleFtpToolModule::OnExtendContentBrowser(const TArray<
 
 void FSimpleFtpToolModule::CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths)
 {
-	bool bCanSubmit = true;
+	bool bCanSubmit = false;
 	for (const auto& Temp : NewPaths)
 	{
-		if (Temp.Equals("/Game") || Temp.Equals("/Game/Map") || Temp.Equals("/Game/Instance") || Temp.Contains("/Ins_"))   //只能提交实例文件夹，以及公共文件夹 **第三方资源文件也可以提交但是要整个文件夹一起提交
+		if (Temp.Contains("/Game/Com_") || (Temp.Contains("/Game/Instance/") && !Temp.Contains("/Ins_")))   //只能提交实例文件夹，以及公共文件夹 
 		{
-			bCanSubmit = false;
+			bCanSubmit = true;
 			break;
 		}
 	}
@@ -290,7 +290,7 @@ void FSimpleFtpToolModule::ConnectToFTPServer()
 {
 	const FString FTPConfig = FPaths::ProjectConfigDir() + TEXT("FtpAccountInfo.ini");
 	FString IP = "";
-	int32 Port = 0;
+	int32 Port = 21;
 	FString UserName = "";
 	FString Password = "";
 	if (GConfig)
@@ -382,34 +382,6 @@ void FSimpleFtpToolModule::SubmitSelectedSource(TArray<FString> NewPaths)
 	TArray<FString> NameNotValidFiles;
 	TArray<FInvalidDepInfo> DepenNotValidFiles;
 	FTP_INSTANCE->FTP_UploadFilesByAsset(NewPaths, NameNotValidFiles, DepenNotValidFiles);
-}
-
-void FSimpleFtpToolModule::SubmitSelectThirdParty(TArray<FString> NewPaths)
-{
-	//第三方文件夹就不用检查命名  需要检车依赖
-	TArray<FInvalidDepInfo> NotValidDependences;
-	bool bAllValid = true;
-	for(const auto& temp : NewPaths)
-	{
-		if (!FTP_INSTANCE->ValidationAllDependenceOfTheFolder(temp, NotValidDependences, false))
-			bAllValid = false;
-	}
-	TArray<FString> EmptyArr;
-	FTP_INSTANCE->ShowMessageBox(EmptyArr, NotValidDependences);
-	if (bAllValid)
-	{
-		FString ContentPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
-		for (FString temp : NewPaths)
-		{
-			temp.ReplaceInline(TEXT("/Game/"),*(ContentPath));
-			TArray<FString> ContentAssetPaths;
-			IFileManager::Get().FindFilesRecursive(ContentAssetPaths, *temp, TEXT("*"), true, false);
-			for (const auto tempfile : ContentAssetPaths)
-			{
-				FTP_INSTANCE->FTP_UploadOneFile(tempfile);
-			}
-		}
-	}
 }
 
 void FSimpleFtpToolModule::PluginButtonClicked()

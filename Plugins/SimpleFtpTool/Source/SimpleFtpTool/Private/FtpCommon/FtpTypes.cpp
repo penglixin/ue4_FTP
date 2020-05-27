@@ -142,7 +142,7 @@ void SimpleFtpDataType::ConvertStructToString(const FInstanceInfo& InstInfo, FSt
 	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
 	JsonWriter->WriteObjectStart();
 	JsonWriter->WriteValue(TEXT("InstValidCode"), InstInfo.InstValidCode);
-
+	JsonWriter->WriteValue(TEXT("UploadAllAsset"), InstInfo.UploadAllAsset);
 	JsonWriter->WriteArrayStart(TEXT("CommonAssetPackageName"));
 	for (const auto& temp : InstInfo.CommonAssetPackageName)
 	{
@@ -174,6 +174,10 @@ bool SimpleFtpDataType::ConvertStringToStruct(const FString& Json, FInstanceInfo
 	{
 		const TSharedPtr<FJsonObject> JsonObject = JsonParsed->AsObject();
 		if (!JsonObject->TryGetStringField(TEXT("InstValidCode"), InstInfo.InstValidCode))
+		{
+			bSuccessed = false;
+		}
+		if (!JsonObject->TryGetBoolField(TEXT("UploadAllAsset"), InstInfo.UploadAllAsset))
 		{
 			bSuccessed = false;
 		}

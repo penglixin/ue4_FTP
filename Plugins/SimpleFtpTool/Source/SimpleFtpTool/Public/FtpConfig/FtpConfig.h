@@ -7,6 +7,9 @@
 #include "Engine/EngineTypes.h"
 #include "FtpConfig.generated.h"
 
+
+//struct FSlateBrush;
+
 /**
  * 
  */
@@ -30,6 +33,9 @@ public:
 
 	UPROPERTY(config, EditAnywhere, Category = "FtpInstProjectName", meta = (ToolTip = "the name of instance."))
 		FString InsProjectName;
+
+	//UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the icon for this submit."))
+	//	FSlateBrush Icon;
 
 	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the description for this submit."))
 		FString SubmitDescription;
