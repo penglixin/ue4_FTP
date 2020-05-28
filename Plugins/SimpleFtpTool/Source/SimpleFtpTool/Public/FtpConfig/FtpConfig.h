@@ -34,8 +34,8 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "FtpInstProjectName", meta = (ToolTip = "the name of instance."))
 		FString InsProjectName;
 
-	//UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the icon for this submit."))
-	//	FSlateBrush Icon;
+	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the icon for this submit."))
+		FFilePath Icon;
 
 	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the description for this submit."))
 		FString SubmitDescription;
@@ -43,6 +43,7 @@ public:
 	UPROPERTY(config, EditAnyWhere, Category = "FtpDepCachePath", meta = (ToolTip = "the path to save server dep file."))
 		FDirectoryPath CachePath;
 
-	UPROPERTY(config, EditAnyWhere, Category = "FtpAssetDownloadPath", meta = (ToolTip = "the path to save server dep file."))
+	UPROPERTY(config, EditAnyWhere, Category = "FtpAssetDownloadPath", meta = (EditCondition  = "false", ToolTip = "the path to save download file."))
 		FDirectoryPath DownloadPath;
+	
 };

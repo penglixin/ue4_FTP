@@ -41,9 +41,9 @@ public:
 
 
 
-		/**
-		 * ²âÊÔº¯Êý
-		 */
+	/**
+	* ²âÊÔº¯Êý
+	*/
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
 		bool TEST_Function(const FString& InFolderPath , FDateTime& DataTime);
 
@@ -53,4 +53,5 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
 		int32 CopyFile(const FString& to, const FString& from, bool bReplace);
 
+	
 };

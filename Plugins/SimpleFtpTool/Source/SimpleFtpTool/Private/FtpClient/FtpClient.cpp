@@ -1581,6 +1581,12 @@ bool FtpClientManager::ftp_test(const FString& InFolderPath, FDateTime& DataTime
 {
 	//DataTime = IFileManager::Get().GetTimeStamp(*InFolderPath);
 	//OverrideAssetOnServer(InFolderPath);
+	FDependenceInfo info;
+	info.DepenAssetPackName = TEXT("*******");
+	info.ValidCode = TEXT("XXXXXX");
+	FString Json;
+	SimpleFtpDataType::ConvertStructToString(info, Json);
+	FFileHelper::SaveStringToFile(Json, *InFolderPath);
 	return IsInstValidCodeSame(InFolderPath);
 	//DeleteFileOrFolder(InFolderPath);
 }

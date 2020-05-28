@@ -7,17 +7,6 @@
 void Aue4_FTPGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	/*FString ContentPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
-	bool removeSucc = ContentPath.RemoveFromEnd(TEXT("/"));
-	GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Purple, FString::FromInt(removeSucc) + ContentPath);
-
-	removeSucc = ContentPath.RemoveFromEnd(TEXT("/"));
-	GEngine->AddOnScreenDebugMessage(-1, 20.f, FColor::Purple, FString::FromInt(removeSucc) + ContentPath);
-
-	ContentPath = FPaths::GetCleanFilename(ContentPath);*/
-	
-
 }
 
 bool Aue4_FTPGameModeBase::FTP_CreateControlSocket(const FString& ip, int32 port)
@@ -64,3 +53,4 @@ int32 Aue4_FTPGameModeBase::CopyFile(const FString& to, const FString& from, boo
 {
 	return IFileManager::Get().Copy(*to, *from, bReplace);
 }
+

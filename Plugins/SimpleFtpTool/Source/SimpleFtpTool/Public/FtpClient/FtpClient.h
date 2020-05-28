@@ -6,6 +6,7 @@
 #include "FtpConfig/FtpConfig.h"
 #include "FtpCommon/FtpTypes.h" 
 #include "FtpCommon/FtpMacro.h"
+#include "SimpleHttpManager.h"
 
 
 

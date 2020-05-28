@@ -304,7 +304,6 @@ void FSimpleFtpToolModule::ConnectToFTPServer()
 	check(FTP_INSTANCE->FTP_CreateControlSocket(IP, Port));
 	check(FTP_INSTANCE->FTP_SendCommand(EFtpCommandType::USER, UserName));
 	check(FTP_INSTANCE->FTP_SendCommand(EFtpCommandType::PASS, Password));
-
 }
 
 void FSimpleFtpToolModule::CreateInstanceFolder(TArray<FString> NewPaths)

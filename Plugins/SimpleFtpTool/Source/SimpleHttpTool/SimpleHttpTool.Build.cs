@@ -2,11 +2,10 @@
 
 using UnrealBuildTool;
 
-public class SimpleFtpTool : ModuleRules
+public class SimpleHttpTool : ModuleRules
 {
-	public SimpleFtpTool(ReadOnlyTargetRules Target) : base(Target)
+	public SimpleHttpTool(ReadOnlyTargetRules Target) : base(Target)
 	{
-        bLegacyPublicIncludePaths = true;
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicIncludePaths.AddRange(
@@ -27,33 +26,20 @@ public class SimpleFtpTool : ModuleRules
 			new string[]
 			{
 				"Core",
+                "HTTP",
+                "Json"
 				// ... add other public dependencies that you statically link with here ...
-                "Sockets",
-                "Networking",
-                "AssetRegistry",
-                "Json",
-                "SimpleHttpTool"
-            }
+			}
 			);
 			
 		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Projects",
-				"InputCore",
-				"UnrealEd",
-				"LevelEditor",
 				"CoreUObject",
 				"Engine",
 				"Slate",
 				"SlateCore",
-                "Settings",
-                "ContentBrowser",
-                "AdvancedPreviewScene",
-                "PropertyEditor",
-                "EditorStyle",
-                "ProceduralMeshComponent"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
@@ -65,10 +51,5 @@ public class SimpleFtpTool : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-
-        // Uncomment if you are using online features
-        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
-    }
+	}
 }
