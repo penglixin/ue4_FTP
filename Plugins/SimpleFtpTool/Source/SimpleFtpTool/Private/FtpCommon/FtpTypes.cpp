@@ -227,7 +227,7 @@ bool SimpleFtpDataType::ConvertStringToStruct(const FString& Json, FInstanceInfo
 void SimpleFtpDataType::ConvertStructToString(const FDependenceInfo& InstInfo, FString& Json)
 {
 	TArray<uint8> binary;
-	FString FileName = TEXT("F:/PLXProject/ue4_FTP/Saved/AutoScreenshot.png");
+	FString FileName = TEXT("D:/UE_4.24/UnrealProjects/ue4_FTP/code.jpg");
 	FFileHelper::LoadFileToArray(binary, *FileName);
 	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
 	JsonWriter->WriteObjectStart();
@@ -238,30 +238,6 @@ void SimpleFtpDataType::ConvertStructToString(const FDependenceInfo& InstInfo, F
 	JsonWriter->Close();
 }
 
-bool SimpleFtpDataType::ConvertStringToStruct(const FString& Json, FDependenceInfo& Info)
-{
-	bool bSuccessed = true;
-	TSharedPtr<FJsonValue> JsonParsed;
-	TArray<uint8> binary;
-	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(Json);
-	if (FJsonSerializer::Deserialize(JsonReader, JsonParsed))
-	{
-		const TSharedPtr<FJsonObject> JsonObject = JsonParsed->AsObject();
-		if (!JsonObject->TryGetStringField(TEXT("ValidCode"), Info.ValidCode))
-		{
-			bSuccessed = false;
-		}
-		if (!JsonObject->TryGetStringField(TEXT("DepenAssetPackName"), Info.DepenAssetPackName))
-		{
-			bSuccessed = false;
-		}
-		if (!JsonObject->TryGetObjectField(TEXT("Image"),FJsonObject));
-		{
-			bSuccessed = false;
-		}
-	}
-	return false;
-}
 
 
 

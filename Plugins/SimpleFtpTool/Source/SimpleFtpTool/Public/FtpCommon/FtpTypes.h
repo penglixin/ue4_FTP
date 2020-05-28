@@ -181,7 +181,6 @@ namespace SimpleFtpDataType
 	bool ConvertStringToStruct(const FString& Json, FInstanceInfo& InstInfo);
 
 	void ConvertStructToString(const FDependenceInfo& InstInfo, FString& Json);
-	bool ConvertStringToStruct(const FString& Json, FDependenceInfo& Info);
 
 }
 

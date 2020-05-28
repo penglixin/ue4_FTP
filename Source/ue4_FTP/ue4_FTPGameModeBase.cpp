@@ -3,6 +3,8 @@
 
 #include "ue4_FTPGameModeBase.h" 
 #include "Engine.h"
+#include "Misc/Base64.h"
+
 
 void Aue4_FTPGameModeBase::BeginPlay()
 {
@@ -52,5 +54,27 @@ bool Aue4_FTPGameModeBase::MoveFile(const FString& to, const FString& from, bool
 int32 Aue4_FTPGameModeBase::CopyFile(const FString& to, const FString& from, bool bReplace)
 {
 	return IFileManager::Get().Copy(*to, *from, bReplace);
+}
+
+FString Aue4_FTPGameModeBase::EnCode(FString FilePath)
+{
+	TArray<uint8> Content;
+	FFileHelper::LoadFileToArray(Content,*FilePath);
+	return FBase64::Encode(Content);
+}
+
+bool Aue4_FTPGameModeBase::Decode(FString Source, TArray<uint8> & Dest) 
+{
+	return FBase64::Decode(Source,Dest);
+}
+
+bool Aue4_FTPGameModeBase::SaveArrayToFile(const TArray<uint8>& Data, FString localpath)
+{
+	return FFileHelper::SaveArrayToFile(Data, *localpath);
+}
+
+void Aue4_FTPGameModeBase::LoadFileToArray(TArray<uint8>& Data, const FString& localpath)
+{
+	FFileHelper::LoadFileToArray(Data, *localpath);
 }
 

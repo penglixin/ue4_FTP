@@ -1579,16 +1579,18 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 
 bool FtpClientManager::ftp_test(const FString& InFolderPath, FDateTime& DataTime)
 {
-	//DataTime = IFileManager::Get().GetTimeStamp(*InFolderPath);
-	//OverrideAssetOnServer(InFolderPath);
-	FDependenceInfo info;
-	info.DepenAssetPackName = TEXT("*******");
-	info.ValidCode = TEXT("XXXXXX");
-	FString Json;
-	SimpleFtpDataType::ConvertStructToString(info, Json);
-	FFileHelper::SaveStringToFile(Json, *InFolderPath);
-	return IsInstValidCodeSame(InFolderPath);
-	//DeleteFileOrFolder(InFolderPath);
+	FString data;
+	FFileHelper::LoadFileToString(data,*InFolderPath);
+	TArray<FString> num;
+	TArray<uint8> Bina;
+	data.ParseIntoArray(num,TEXT(","));
+	for(const auto& temp : num)
+	{
+		int32 i=FCString::Atoi(*temp);
+		Bina.Add(i);
+	}
+	FString localfile = TEXT("D:/UE_4.24/UnrealProjects/ue4_FTP/ga.jpg");
+	return FFileHelper::SaveArrayToFile(Bina,*localfile);
 }
 
 

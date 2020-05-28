@@ -53,5 +53,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
 		int32 CopyFile(const FString& to, const FString& from, bool bReplace);
 
-	
+
+	UFUNCTION(BlueprintCallable, Category="Base64")
+		FString EnCode(FString FilePath);
+
+	UFUNCTION(BlueprintCallable, Category = "Base64")
+		bool Decode(FString Source, TArray<uint8>& Dest);
+
+	UFUNCTION(BlueprintCallable, Category = "Base64")
+		bool SaveArrayToFile(const TArray<uint8>& Data, FString localpath);
+
+	UFUNCTION(BlueprintCallable, Category = "Base64")
+		void LoadFileToArray(TArray<uint8>& Data, const FString& localpath);
 };
