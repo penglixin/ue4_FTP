@@ -47,7 +47,7 @@ public:
 	//根据PackageName上传资源
 	bool FTP_UploadFilesByAsset(const TArray<FString>& InPackNames, TArray<FString>& NameNotValidFiles, TArray<FInvalidDepInfo>& DepenNotValidFiles);
 
-	bool ftp_test(const FString& InFolderPath, FDateTime& DataTime);
+	bool ftp_test(const FString& InFolderPath, const FString& URL);
 
 public:
 	//列举路径下的所有文件(绝对路径)

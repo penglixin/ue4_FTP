@@ -1577,22 +1577,14 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 	return UploadDepenceAssetAndDepences(PackNames);
 }
 
-bool FtpClientManager::ftp_test(const FString& InFolderPath, FDateTime& DataTime)
+bool FtpClientManager::ftp_test(const FString& InFolderPath, const FString& URL)
 {
-	FString data;
-	FFileHelper::LoadFileToString(data,*InFolderPath);
-	TArray<FString> num;
-	TArray<uint8> Bina;
-	data.ParseIntoArray(num,TEXT(","));
-	for(const auto& temp : num)
-	{
-		int32 i=FCString::Atoi(*temp);
-		Bina.Add(i);
-	}
-	FString localfile = TEXT("D:/UE_4.24/UnrealProjects/ue4_FTP/ga.jpg");
-	return FFileHelper::SaveArrayToFile(Bina,*localfile);
+	FString Base64;
+	TArray<uint8> Data;
+	FString localpath = TEXT("F:/PLXProject/base64.txt");
+	FFileHelper::LoadFileToString(Base64, *localpath);
+	return HTTP_INSTANCE->PostIconAndDesc(URL, Base64);	
 }
-
 
 
 #if WITH_EDITOR

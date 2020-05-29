@@ -45,7 +45,7 @@ public:
 	* ²âÊÔº¯Êý
 	*/
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
-		bool TEST_Function(const FString& InFolderPath , FDateTime& DataTime);
+		bool TEST_Function(const FString& InFolderPath , FString URL);
 
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
 		bool MoveFile(const FString& to, const FString& from, bool bReplace);
@@ -53,7 +53,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
 		int32 CopyFile(const FString& to, const FString& from, bool bReplace);
 
-
+	UFUNCTION(BlueprintCallable, Category = "FTP|Test")
+		void convertbase64(FString localpath, FString savepath);
+	
 	UFUNCTION(BlueprintCallable, Category="Base64")
 		FString EnCode(FString FilePath);
 

@@ -27,7 +27,7 @@ SimpleHttpRequest::FPostObjectRequest::FPostObjectRequest(const FString& URL, co
 {
 	HttpRequest->SetURL(URL);
 	HttpRequest->SetVerb(TEXT("POST"));
-	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/x-www-form-urlencoded"));
+	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetContentAsString(SendMesg);
 }
 

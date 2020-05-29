@@ -17,6 +17,7 @@ public:
 public:
 	
 	bool PostIconAndDesc(const FHttpDelegate& HttpDelegates, const FString& URL, const FString& sendMesg);
+	bool PostIconAndDesc(const FString& URL, const FString& sendMesg);
 
 private:
 	static HttpManager* httpInstance;

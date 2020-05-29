@@ -224,20 +224,6 @@ bool SimpleFtpDataType::ConvertStringToStruct(const FString& Json, FInstanceInfo
 	return bSuccessed;
 }
 
-void SimpleFtpDataType::ConvertStructToString(const FDependenceInfo& InstInfo, FString& Json)
-{
-	TArray<uint8> binary;
-	FString FileName = TEXT("D:/UE_4.24/UnrealProjects/ue4_FTP/code.jpg");
-	FFileHelper::LoadFileToArray(binary, *FileName);
-	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
-	JsonWriter->WriteObjectStart();
-	JsonWriter->WriteValue(TEXT("Image"), binary);
-	JsonWriter->WriteValue(TEXT("DepenAssetPackName"), InstInfo.DepenAssetPackName);
-	JsonWriter->WriteValue(TEXT("ValidCode"), InstInfo.ValidCode);
-	JsonWriter->WriteObjectEnd();
-	JsonWriter->Close();
-}
-
 
 
 

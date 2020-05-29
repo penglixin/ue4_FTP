@@ -38,3 +38,9 @@ bool HttpManager::PostIconAndDesc(const FHttpDelegate& HttpDelegates, const FStr
 
 	return HttpObject->PostIconAndDesc(URL, sendMesg);
 }
+
+bool HttpManager::PostIconAndDesc(const FString& URL, const FString& sendMesg)
+{
+	FHttpSingleRequest* HttpObject = new FHttpSingleRequest();
+	return HttpObject->PostIconAndDesc(URL, sendMesg);
+}

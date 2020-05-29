@@ -26,6 +26,7 @@ UFtpConfig::UFtpConfig()
 			platform.CreateDirectory(*DownloadPath.Path);
 		}
 	}
+	sleeptime = 0.2f;
 
 	bShowServerMesg = true;
 	

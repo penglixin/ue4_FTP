@@ -4,6 +4,7 @@
 #include "ue4_FTPGameModeBase.h" 
 #include "Engine.h"
 #include "Misc/Base64.h"
+#include "SimpleHttpManager.h"
 
 
 void Aue4_FTPGameModeBase::BeginPlay()
@@ -41,9 +42,9 @@ bool Aue4_FTPGameModeBase::FTP_UploadFiles(const FString& localPath, TArray<FStr
 	return FTP_INSTANCE->FTP_UploadOneFile(localPath);
 }
 
-bool Aue4_FTPGameModeBase::TEST_Function(const FString& InFolderPath, FDateTime& DataTime)
+bool Aue4_FTPGameModeBase::TEST_Function(const FString& InFolderPath, FString URL)
 {
-	return FTP_INSTANCE->ftp_test(InFolderPath, DataTime);
+	return FTP_INSTANCE->ftp_test(InFolderPath, URL);
 }
 
 bool Aue4_FTPGameModeBase::MoveFile(const FString& to, const FString& from, bool bReplace)
@@ -54,6 +55,15 @@ bool Aue4_FTPGameModeBase::MoveFile(const FString& to, const FString& from, bool
 int32 Aue4_FTPGameModeBase::CopyFile(const FString& to, const FString& from, bool bReplace)
 {
 	return IFileManager::Get().Copy(*to, *from, bReplace);
+}
+
+void Aue4_FTPGameModeBase::convertbase64(FString localpath, FString savepath)
+{
+	FString Base64;
+	TArray<uint8> Data;
+	FFileHelper::LoadFileToString(Base64, *localpath);
+	FBase64::Decode(Base64, Data);
+	FFileHelper::SaveArrayToFile(Data, *savepath);
 }
 
 FString Aue4_FTPGameModeBase::EnCode(FString FilePath)
