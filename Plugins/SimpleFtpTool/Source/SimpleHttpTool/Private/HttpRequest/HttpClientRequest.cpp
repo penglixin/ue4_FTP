@@ -31,14 +31,6 @@ SimpleHttpRequest::FPostObjectRequest::FPostObjectRequest(const FString& URL, co
 	HttpRequest->SetContentAsString(SendMesg);
 }
 
-SimpleHttpRequest::FPostObjectRequest::FPostObjectRequest(const FString& URL, const TArray<uint8>& SendMesg)
-{
-	HttpRequest->SetURL(URL);
-	HttpRequest->SetVerb(TEXT("POST"));
-	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/x-www-form-urlencoded"));
-	HttpRequest->SetContent(SendMesg);
-}
-
 SimpleHttpRequest::FDeleteObjectRequest::FDeleteObjectRequest(const FString& URL)
 {
 	HttpRequest->SetURL(URL);

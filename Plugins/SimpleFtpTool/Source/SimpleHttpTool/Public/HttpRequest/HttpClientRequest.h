@@ -24,7 +24,6 @@ namespace SimpleHttpRequest
 	struct SIMPLEHTTPTOOL_API FPostObjectRequest : IHTTPClientRequest
 	{
 		FPostObjectRequest(const FString& URL, const FString& SendMesg);
-		FPostObjectRequest(const FString& URL, const TArray<uint8>& SendMesg);
 	};
 
 	struct SIMPLEHTTPTOOL_API FDeleteObjectRequest : IHTTPClientRequest

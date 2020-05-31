@@ -24,6 +24,16 @@ public:
 	void CreateInstanceFolder(const FString& InstanceName);
 	void ShowMessageBox(const TArray<FString>& NameNotValidFiles, const TArray<FInvalidDepInfo>& DepenNotValidFiles);
 
+	//上传图片以及说明到web服务器
+	//1. 实例上传
+	//2. 单个资源上传
+	//3. 第三方文件加上传
+	bool UploadInstanceDescriptToWeb(const FString& InFolderPath);
+
+	bool UploadSingleAssetDescriptToWeb(const FString& InAssetPath);
+
+	bool UploadThirdFolderDescriptToWeb(const FString& InThirdPath);
+
 
 public:
 	/*********************************************************************/
@@ -37,9 +47,9 @@ public:
 	//列举文件夹 (相对路径)
 	bool FTP_ListFile(const FString& serverPath, TArray<FString>& OutFiles, bool bIncludeFolder = true);
 	//下载单个文件 规定文件路径用/隔开 如：/Folder1/Folder2/adadd.txt localpath:需要用绝对路径如：E:/Game/Folder
-	bool FTP_DownloadOneFile(const FString& serverFileName, const FString& localSavePath);
+	bool FTP_DownloadOneFile(const FString& serverFileName);
 	//下载文件夹里的所有文件 serverFolder:如 /asd				localpath:需要用绝对路径如：E:/Game/Folder
-	bool FTP_DownloadFiles(const FString& serverFolder, const FString& localSavePath);
+	bool FTP_DownloadFiles(const FString& serverFolder);
 	//上传单个文件
 	bool FTP_UploadOneFile(const FString& localFileName);
 	//上传文件夹里的所有文件
@@ -78,6 +88,8 @@ public:
 	void UploadThirdPartyFolder(const FString& InFolder);
 	
 private:
+	//获取本地IP
+	FString GetMylocalIPADDR();
 	//接受服务端返回的消息
 	bool ReceiveData(FSocket* sock, FString& RecvMesg, TArray<uint8>& dataArray, bool bSleep = true);
 	//创建 dataSocket
@@ -113,6 +125,7 @@ private:
 
 private:
 	FString DataTypeIni;
+	
 };
 
 #define FTP_INSTANCE FtpClientManager::Get()

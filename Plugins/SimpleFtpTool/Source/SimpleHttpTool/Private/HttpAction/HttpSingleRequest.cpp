@@ -27,23 +27,25 @@ bool FHttpSingleRequest::PostIconAndDesc(const FString& URL, const FString& send
 
 void FHttpSingleRequest::HttpRequestComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectSuccessfully)
 {
-	FString Verb = Request->GetVerb();
-	FString URL = Request->GetURL();
-	uint8 Status = (uint8)Request->GetStatus();
-	float ElapsedTime = Request->GetElapsedTime();
-	FString ContentType = Request->GetContentType();
-	int32 ContentLength = Request->GetContentLength();
+	//²âÊÔÓÃ
+	{
+		FString Verb = Request->GetVerb();
+		FString URL = Request->GetURL();
+		uint8 Status = (uint8)Request->GetStatus();
+		float ElapsedTime = Request->GetElapsedTime();
+		FString ContentType = Request->GetContentType();
+		int32 ContentLength = Request->GetContentLength();
 
+		int32 responceCode = Response->GetResponseCode();
+		FString ResponseURL = Response->GetURL();
+		FString ResponseContentType = Response->GetContentType();
+		int32 ResponseContentLength = Response->GetContentLength();
+		FString ResponseMessage = Response->GetContentAsString();
+		TArray<uint8> ResponseContent = Response->GetContent();
 
-	int32 responceCode = Response->GetResponseCode();
-	FString ResponseURL = Response->GetURL();
-	FString ResponseContentType = Response->GetContentType();
-	int32 ResponseContentLength = Response->GetContentLength();
-	FString ResponseMessage = Response->GetContentAsString();
-	TArray<uint8> ResponseContent = Response->GetContent();
-
-	bool bRequest = Request.IsValid();
-	bool bResponse = Response.IsValid();
+		bool bRequest = Request.IsValid();
+		bool bResponse = Response.IsValid();
+	}
 
 	if (Request.IsValid() && Response.IsValid() && bConnectSuccessfully && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
 	{

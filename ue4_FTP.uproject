@@ -20,6 +20,14 @@
 				"Linux",
 				"Mac"
 			]
+		},
+		{
+			"Name": "RemoteControl",
+			"Enabled": true
+		},
+		{
+			"Name": "WebBrowserWidget",
+			"Enabled": true
 		}
 	]
 }

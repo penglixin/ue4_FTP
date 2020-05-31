@@ -1,7 +1,8 @@
 #include "HttpCommon/SimpleHttpType.h"
 
-void FWebSendData::ConvertToString(FString& Json)
+FString FWebSendData::ConvertToString()
 {
+	FString Json;
 	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
 	JsonWriter->WriteObjectStart();
 	JsonWriter->WriteValue(TEXT("name"), this->name);
@@ -10,4 +11,5 @@ void FWebSendData::ConvertToString(FString& Json)
 	JsonWriter->WriteValue(TEXT("file"), this->file);
 	JsonWriter->WriteObjectEnd();
 	JsonWriter->Close();
+	return Json;
 }

@@ -2,6 +2,7 @@
 #include "Engine.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Base64.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformFilemanager.h"
 #include <fstream>
@@ -101,6 +102,44 @@ void FtpClientManager::ShowMessageBox(const TArray<FString>& NameNotValidFiles, 
 		}
 		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("The following asset has invalid dependences:\n" + AllStr + "\nyou can try to copy the invalid dependences to the common folder or your instance folder."));
 	}	
+}
+
+bool FtpClientManager::UploadInstanceDescriptToWeb(const FString& InFolderPath)
+{
+	FWebSendData WebData;
+	TArray<uint8> ImageData;
+	FString ImageBase64;
+	FString Description = GetDefault<UFtpConfig>()->SubmitDescription;
+	FString WebUrl = GetDefault<UFtpConfig>()->WebURL;	
+	FString IconPath = GetDefault<UFtpConfig>()->Icon.FilePath;
+	FString Extension = FPaths::GetExtension(IconPath, false);
+	FFileHelper::LoadFileToArray(ImageData, *IconPath);
+	ImageBase64 = FBase64::Encode(ImageData);
+	FString Preffix = TEXT("data:image/") + Extension + TEXT(";base64,");
+	FString InsFolderName = InFolderPath;
+	InsFolderName.RemoveFromStart(TEXT("/Game/"));
+	WebData.describe = Description;
+	WebData.name = InsFolderName;  // Instance/ProjA
+	WebData.filePath = InsFolderName;
+	WebData.file = Preffix + ImageBase64;
+	FString Json = WebData.ConvertToString();
+
+	FString Tips;
+	if(WebUrl.IsEmpty() || IconPath.IsEmpty() || Description.IsEmpty())
+	{
+		Tips = TEXT("You have some submissions that you didn't fill in.");
+		FMessageDialog::Open(EAppMsgType::Ok,FText::FromString(Tips));
+		return false;
+	}
+	else
+	{
+		Tips = TEXT("Have you set up the submit description and icon for this submission? \"No\" to stop upload and set up these information.");
+		EAppReturnType::Type returntype;
+		returntype = FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(Tips));
+		if(returntype != EAppReturnType::Type::Yes)
+			return false;
+	}
+	return HTTP_INSTANCE->PostIconAndDesc(WebUrl, Json);
 }
 
 FtpClientManager* FtpClientManager::ftpInstance = nullptr;
@@ -203,6 +242,18 @@ void FtpClientManager::CreateInstanceFolder(const FString& InstanceName)
 		filePlatform.CreateDirectory(*InstanceANI);
 }
 
+
+FString FtpClientManager::GetMylocalIPADDR()
+{
+	FString Myip("NONE");
+	bool bCanBind;
+	TSharedPtr<FInternetAddr> localIP = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->GetLocalHostAddr(*GLog, bCanBind);
+	if(localIP->IsValid())
+	{
+		Myip = localIP->ToString(false);
+	}
+	return Myip;
+}
 
 /******************************************************************************/
 /******************************************************************************/
@@ -955,7 +1006,7 @@ bool FtpClientManager::IsInstValidCodeSame(const FString& InstName)
 	FString ServerValidCode;
 	FString localfilename;
 	FString serverfilename;
-	FString clearnnaem = FPaths::GetCleanFilename(InstName);
+	FString clearnname = FPaths::GetCleanFilename(InstName);
 	FString Json;
 	FInstanceInfo instInfo;
 	if (InstName.Contains(TEXT("/Game/")))
@@ -963,18 +1014,18 @@ bool FtpClientManager::IsInstValidCodeSame(const FString& InstName)
 		//上传  传入的是 /Game/Instance/ProjA
 		//转换成绝对路径，获取ProjA.dep
 		localfilename = InstName;
-		serverfilename = InstName / clearnnaem + GetDefault<UFtpConfig>()->Suffix;
+		serverfilename = InstName / clearnname + GetDefault<UFtpConfig>()->Suffix;
 		serverfilename.RemoveFromStart(TEXT("/Game/"));
 		FString ProjContent = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
 		localfilename.ReplaceInline(TEXT("/Game/"), *ProjContent);
-		localfilename += TEXT("/") + clearnnaem + GetDefault<UFtpConfig>()->Suffix;
+		localfilename += TEXT("/") + clearnname + GetDefault<UFtpConfig>()->Suffix;
 		GET_INST_VALIDCODE()
 	}
 	else
 	{
 		//下载 传入的是 Instance/ProjA
-		serverfilename = InstName / clearnnaem + GetDefault<UFtpConfig>()->Suffix;
-		localfilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) + InstName / clearnnaem + GetDefault<UFtpConfig>()->Suffix;
+		serverfilename = InstName / clearnname + GetDefault<UFtpConfig>()->Suffix;
+		localfilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) + InstName / clearnname + GetDefault<UFtpConfig>()->Suffix;
 		GET_INST_VALIDCODE()
 	}
 	//校验码不为空，并且相等
@@ -1037,7 +1088,7 @@ void FtpClientManager::UploadThirdPartyFolder(const FString& InFolder)
 	{
 		FTP_UploadOneFile(temp);
 	}
-}
+}  
 
 
 /******************************************************************************/
@@ -1190,12 +1241,12 @@ bool FtpClientManager::FTP_ListFile(const FString& serverPath, TArray<FString>& 
 	return true;
 }
 
-bool FtpClientManager::FTP_DownloadOneFile(const FString& serverFileName, const FString& localSavePath)
+bool FtpClientManager::FTP_DownloadOneFile(const FString& serverFileName)
 {
 	bool bSuccessed = true;
 	FString Mesg;
 	TArray<uint8> RecvBinary;
-	FString FileSaveName = localSavePath / serverFileName;
+	FString FileSaveName = GetDefault<UFtpConfig>()->DownloadPath.Path + serverFileName;
 	//先发送PASV指令
 	int32 PasvPort = SendPASVCommand();
 	//创建数据连接
@@ -1218,7 +1269,7 @@ bool FtpClientManager::FTP_DownloadOneFile(const FString& serverFileName, const 
 	}
 	else
 	{
-		Print("Download " + serverFileName +"failed!", 100.f, FColor::Red);
+		Print("Download " + serverFileName + " failed!", 100.f, FColor::Red);
 		bSuccessed = false;
 	}
 _Program_Endl:
@@ -1230,7 +1281,7 @@ _Program_Endl:
 	return bSuccessed;
 }
 
-bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder, const FString& localSavePath)
+bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder)
 {
 	EFileType fileType = JudgeserverPath(serverFolder);
 	bool bSuccessed = false;
@@ -1242,14 +1293,14 @@ bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder, const FStr
 		{
 			for (const auto& Tempfilename : FileArr)
 			{
-				bSuccessed = FTP_DownloadOneFile(Tempfilename,localSavePath);
+				bSuccessed = FTP_DownloadOneFile(Tempfilename);
 				if (!bSuccessed)
 					return false;
 			}
 		}
 break;
 	case EFileType::FILE:
-		bSuccessed = FTP_DownloadOneFile(serverFolder, localSavePath);
+		bSuccessed = FTP_DownloadOneFile(serverFolder);
 		break;
 	}
 	return bSuccessed;
@@ -1258,14 +1309,9 @@ break;
 bool FtpClientManager::FTP_UploadOneFile(const FString& localFileName)
 {
 	bool bSuccessed = true;
-	FString FilaName = FPaths::GetCleanFilename(localFileName);
+	FString FileName = FPaths::GetCleanFilename(localFileName);
 	int32 size = 0;
 	int32 SendByte = 0;
-	//检查是否已经存在服务器 是否覆盖服务器上文件
-	if (!OverrideAssetOnServer(localFileName))
-	{
-		return true;
-	}
 	//数据连接发送文件内容:先把文件转换成二进制数据，再通过datasocket发送
 	TArray<uint8> sendData;
 	if (!FFileHelper::LoadFileToArray(sendData, *localFileName))
@@ -1282,7 +1328,7 @@ bool FtpClientManager::FTP_UploadOneFile(const FString& localFileName)
 		goto _Program_Endl;
 	}
 	//控制连接 发送命令
-	if (false == FTP_SendCommand(EFtpCommandType::STOR, FilaName))
+	if (false == FTP_SendCommand(EFtpCommandType::STOR, FileName))
 	{
 		bSuccessed = false;
 		goto _Program_Endl;
@@ -1344,6 +1390,11 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
 		return false;
 	}
+	if(InGamePath.Contains(TEXT("/Instance/")))
+	{	//提交实例描述
+		if(!UploadInstanceDescriptToWeb(InGamePath))
+			return false;
+	}
 	DeleteUselessFile();
 	TArray<FString> ThirdPartyName;
 	HasDepencyThirdAsset(InGamePath, ThirdPartyName);
@@ -1370,7 +1421,7 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		{
 			if (Tempfilename.Contains(GetDefault<UFtpConfig>()->Suffix))
 				depenfile.Add(Tempfilename);
-			if (!FTP_UploadOneFile (Tempfilename))
+			if (!FTP_UploadOneFile(Tempfilename))
 				return false;
 		}
 		//找出依赖资源的PackageName
@@ -1579,17 +1630,20 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 
 bool FtpClientManager::ftp_test(const FString& InFolderPath, const FString& URL)
 {
-	FString Base64;
-	TArray<uint8> Data;
-	FString localpath = TEXT("F:/PLXProject/base64.txt");
-	FFileHelper::LoadFileToString(Base64, *localpath);
-	return HTTP_INSTANCE->PostIconAndDesc(URL, Base64);	
+	FString ip = GetMylocalIPADDR();
+	bool b = UploadInstanceDescriptToWeb(InFolderPath);
+	return b;
+	FWebSendData webdata;
+	webdata.file = "file";
+	webdata.describe = "describe";
+	webdata.filePath = "filePath";
+	webdata.name = "name";
+	FString Json = webdata.ConvertToString();
+	return false;
 }
-
 
 #if WITH_EDITOR
 #if PLATFORM_WINDOWS
 #pragma optimize("",on)
 #endif
 #endif
-

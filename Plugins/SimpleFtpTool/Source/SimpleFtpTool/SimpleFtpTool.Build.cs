@@ -53,7 +53,8 @@ public class SimpleFtpTool : ModuleRules
                 "AdvancedPreviewScene",
                 "PropertyEditor",
                 "EditorStyle",
-                "ProceduralMeshComponent"
+                "ProceduralMeshComponent",
+                "UMG"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

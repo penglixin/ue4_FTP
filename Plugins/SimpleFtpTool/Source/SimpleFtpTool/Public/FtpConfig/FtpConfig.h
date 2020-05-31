@@ -34,6 +34,9 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "FtpInstProjectName", meta = (ToolTip = "the name of instance."))
 		FString InsProjectName;
 
+	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (EditCondition = "false", ToolTip = "the icon for this submit."))
+		FString WebURL;
+
 	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the icon for this submit."))
 		FFilePath Icon;
 

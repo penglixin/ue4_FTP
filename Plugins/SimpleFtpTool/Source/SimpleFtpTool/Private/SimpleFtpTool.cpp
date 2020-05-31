@@ -21,6 +21,8 @@
 #include "FtpSlate/FileTree/FilePrasing.h"
 #include "FtpSlate/FileTree/SFolder.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "FtpClient/WebRemoteActor.h"
 
 static const FName SimpleFtpToolTabName("SimpleFtpTool");
 
@@ -104,7 +106,6 @@ void FSimpleFtpToolModule::StartupModule()
 		GProceduralMeshComponent = NewObject<UProceduralMeshComponent>();
 		GProceduralMeshComponent->AddToRoot();
 	}
-
 	SimpleOneParamDelegate.BindRaw(this, &FSimpleFtpToolModule::UpdateFiles);
 }
 
@@ -154,12 +155,11 @@ TSharedRef<FExtender> FSimpleFtpToolModule::OnExtendContentBrowser(const TArray<
 void FSimpleFtpToolModule::CreateSubMenuForContentBrowser(FMenuBuilder& MenuBuilder, TArray<FString> NewPaths)
 {
 	bool bCanSubmit = false;
-	for (const auto& Temp : NewPaths)
+	if(NewPaths.Num() == 1)
 	{
-		if (Temp.Contains("/Game/Com_") || (Temp.Contains("/Game/Instance/") && !Temp.Contains("/Ins_")))   //只能提交实例文件夹，以及公共文件夹 
+		if (NewPaths[0].Contains("/Game/Com_") || (NewPaths[0].Contains("/Game/Instance/") && !NewPaths[0].Contains("/Ins_")))   //只能提交实例文件夹，以及公共文件夹 并且每次只能提交一个文件夹
 		{
 			bCanSubmit = true;
-			break;
 		}
 	}
 	MenuBuilder.BeginSection("Custom Menu", LOCTEXT("CustomMenu", "Custom Menu Option"));
@@ -387,6 +387,19 @@ void FSimpleFtpToolModule::PluginButtonClicked()
 {
 	FGlobalTabmanager::Get()->InvokeTab(SimpleFtpToolTabName);
 
+	TArray<AActor*> arr;
+	UWorld* World = GEditor->GetEditorWorldContext().World();
+	UGameplayStatics::GetAllActorsOfClass(World, AWebRemoteActor::StaticClass(), arr);
+	if (arr.Num())
+	{
+		AWebRemoteActor* web = Cast<AWebRemoteActor>(arr[0]);
+		if(web)
+		{
+			web->asd(TEXT("addddd"));
+		}
+	}
+
+	return;
 	TArray<FString> FileNames;
 	FTP_INSTANCE->FTP_ListFile(TEXT(""), FileNames);
 	SimpleOneParamDelegate.ExecuteIfBound(FileNames);

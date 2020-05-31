@@ -24,12 +24,12 @@ bool Aue4_FTPGameModeBase::FTP_SendCommand(EFtpCommandType type, FString Param)
 
 bool Aue4_FTPGameModeBase::FTP_DownloadFile(FString ServerFilePath, FString SavePath)
 {
-	return FTP_INSTANCE->FTP_DownloadOneFile(ServerFilePath, SavePath);
+	return FTP_INSTANCE->FTP_DownloadOneFile(ServerFilePath);
 }
 
 bool Aue4_FTPGameModeBase::FTP_DownloadFiles(const FString& serverFolder, const FString& localSavePath)
 {
-	return FTP_INSTANCE->FTP_DownloadFiles(serverFolder,localSavePath);
+	return FTP_INSTANCE->FTP_DownloadFiles(serverFolder);
 }
 
 bool Aue4_FTPGameModeBase::FTP_List(const FString& serverPath, TArray<FString>& OutFiles)

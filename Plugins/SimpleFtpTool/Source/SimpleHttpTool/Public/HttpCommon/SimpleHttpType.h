@@ -20,7 +20,7 @@ struct SIMPLEHTTPTOOL_API FWebSendData
 	FString file;
 
 public:
-	void ConvertToString(FString& Json);
+	FString ConvertToString();
 
 };
 

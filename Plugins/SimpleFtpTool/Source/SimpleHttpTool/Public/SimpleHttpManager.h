@@ -16,7 +16,7 @@ public:
 
 public:
 	
-	bool PostIconAndDesc(const FHttpDelegate& HttpDelegates, const FString& URL, const FString& sendMesg);
+	bool PostIconAndDesc(const FHttpDelegate& HttpDelegates, const FString& URL, const FString& sendMesg); //°ó¶¨Î¯ÍÐ
 	bool PostIconAndDesc(const FString& URL, const FString& sendMesg);
 
 private:
@@ -25,3 +25,5 @@ private:
 };
 
 #define HTTP_INSTANCE HttpManager::Get()
+
+
