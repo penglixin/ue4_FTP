@@ -28,13 +28,12 @@ public:
 	//1. 实例上传
 	//2. 单个资源上传
 	//3. 第三方文件加上传
-	bool UploadInstanceDescriptToWeb(const FString& InFolderPath);
+	bool UploadInstanceDescriptToWeb(const FString& InFolderPath, const TArray<FString>& ThirdFolders);
 
 	bool UploadSingleAssetDescriptToWeb(const FString& InAssetPath);
 
-	bool UploadThirdFolderDescriptToWeb(const FString& InThirdPath);
-
-
+	bool UploadThirdFolderDescriptToWeb(const TArray<FString>& InThirdPath);
+	
 public:
 	/*********************************************************************/
 	/*************************ftp客户端操作接口****************************/
@@ -85,7 +84,7 @@ public:
 	//检查实例是否依赖第三方资源 传入实例文件夹路径
 	void HasDepencyThirdAsset(const FString& InGamePath, TArray<FString>& ThirdPartyName);
 	//提交第三方文件夹
-	void UploadThirdPartyFolder(const FString& InFolder);
+	void UploadThirdPartyFolder(const TArray<FString>& InFolders);
 	
 private:
 	//获取本地IP

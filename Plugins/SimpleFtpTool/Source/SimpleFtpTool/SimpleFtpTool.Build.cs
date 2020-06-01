@@ -54,7 +54,8 @@ public class SimpleFtpTool : ModuleRules
                 "PropertyEditor",
                 "EditorStyle",
                 "ProceduralMeshComponent",
-                "UMG"
+                "UMG",
+                "WebBrowserWidget",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

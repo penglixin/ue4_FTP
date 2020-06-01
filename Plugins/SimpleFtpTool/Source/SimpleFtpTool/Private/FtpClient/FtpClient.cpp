@@ -104,16 +104,16 @@ void FtpClientManager::ShowMessageBox(const TArray<FString>& NameNotValidFiles, 
 	}	
 }
 
-bool FtpClientManager::UploadInstanceDescriptToWeb(const FString& InFolderPath)
+bool FtpClientManager::UploadInstanceDescriptToWeb(const FString& InFolderPath, const TArray<FString>& ThirdFolders)
 {
 	FWebSendData WebData;
 	TArray<uint8> ImageData;
 	FString ImageBase64;
-	FString Description = GetDefault<UFtpConfig>()->SubmitDescription;
+	FString Description = GetDefault<UFtpConfig>()->InstanceDescription;
 	FString WebUrl = GetDefault<UFtpConfig>()->WebURL;	
-	FString IconPath = GetDefault<UFtpConfig>()->Icon.FilePath;
-	FString Extension = FPaths::GetExtension(IconPath, false);
-	FFileHelper::LoadFileToArray(ImageData, *IconPath);
+	FString InstanceIconPath = GetDefault<UFtpConfig>()->InstanceIcon.FilePath;
+	FString Extension = FPaths::GetExtension(InstanceIconPath, false);
+	FFileHelper::LoadFileToArray(ImageData, *InstanceIconPath);
 	ImageBase64 = FBase64::Encode(ImageData);
 	FString Preffix = TEXT("data:image/") + Extension + TEXT(";base64,");
 	FString InsFolderName = InFolderPath;
@@ -125,21 +125,85 @@ bool FtpClientManager::UploadInstanceDescriptToWeb(const FString& InFolderPath)
 	FString Json = WebData.ConvertToString();
 
 	FString Tips;
-	if(WebUrl.IsEmpty() || IconPath.IsEmpty() || Description.IsEmpty())
+	if(InstanceIconPath.IsEmpty() || Description.IsEmpty())
 	{
-		Tips = TEXT("You have some submissions that you didn't fill in.");
+		Tips = TEXT("You have some Instance Description that you didn't fill in.");
 		FMessageDialog::Open(EAppMsgType::Ok,FText::FromString(Tips));
 		return false;
 	}
 	else
 	{
-		Tips = TEXT("Have you set up the submit description and icon for this submission? \"No\" to stop upload and set up these information.");
+		Tips = TEXT("Have you set up the instance submit description for this submission? \"No\" to stop upload and set up these information in project setting.");
 		EAppReturnType::Type returntype;
 		returntype = FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(Tips));
 		if(returntype != EAppReturnType::Type::Yes)
 			return false;
 	}
+
+	if (ThirdFolders.Num())
+	{
+		FString Str;
+		for (const auto& temp : ThirdFolders)
+		{
+			Str += temp + TEXT("\n");
+		}
+		Tips = TEXT("you have referenced third-party resource:\n") + Str +TEXT("Have you set up the submit description for these third-party submission?\n \"No\" to stop upload and set up these information in project setting.");
+		EAppReturnType::Type returntype;
+		returntype = FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(Tips));
+		if (returntype != EAppReturnType::Type::Yes)
+			return false;
+
+		bool bCompleted;
+		TArray<FSubmitThirdPartyInfo> ThirdPartyInfo = GetDefault<UFtpConfig>()->ThirdPartyDescriptions;
+		for (const auto& temp : ThirdFolders)
+		{
+			bCompleted = false;
+			for (const auto& tempthird : ThirdPartyInfo)
+			{
+				if (temp.Equals(tempthird.ThirdPartyName))
+					bCompleted = true;
+			}
+			if (!bCompleted)
+			{
+				Tips = TEXT("please set the third-party folder name correctly in the project settings ");
+				FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(Tips));
+				return false;
+			}
+		}
+	}
+	UploadThirdFolderDescriptToWeb(ThirdFolders);
 	return HTTP_INSTANCE->PostIconAndDesc(WebUrl, Json);
+}
+
+bool FtpClientManager::UploadThirdFolderDescriptToWeb(const TArray<FString>& InThirdPath)
+{
+	//传入第三方资源文件夹名
+	for (const auto& tempfolder : InThirdPath)
+	{
+		for (const auto& tempDescrip : GetDefault<UFtpConfig>()->ThirdPartyDescriptions)
+		{
+			if (tempfolder.Equals(tempDescrip.ThirdPartyName))
+			{
+				FWebSendData WebData;
+				TArray<uint8> ImageData;
+				FString ImageBase64;
+				FString Description = tempDescrip.ThirdPartyDescription;
+				FString WebUrl = GetDefault<UFtpConfig>()->WebURL;
+				FString ThirdPartyIcon = tempDescrip.IconPath.FilePath;
+				FString Extension = FPaths::GetExtension(ThirdPartyIcon, false);
+				FFileHelper::LoadFileToArray(ImageData, *ThirdPartyIcon);
+				ImageBase64 = FBase64::Encode(ImageData);
+				FString Preffix = TEXT("data:image/") + Extension + TEXT(";base64,");
+				WebData.describe = Description;
+				WebData.name = tempfolder;
+				WebData.filePath = tempfolder;
+				WebData.file = Preffix + ImageBase64;
+				FString Json = WebData.ConvertToString();
+				HTTP_INSTANCE->PostIconAndDesc(WebUrl, Json);
+			}
+		}
+	}
+	return true;
 }
 
 FtpClientManager* FtpClientManager::ftpInstance = nullptr;
@@ -184,7 +248,6 @@ void FtpClientManager::Destroy()
 
 void FtpClientManager::Initialize_Folder()
 {
-	// D:/Work/UE_4.22/UnrealProjects/HotUpdate/Content/
 	FString ProjContentFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
 	DataTypeIni = FPaths::ConvertRelativePathToFull(FPaths::ProjectConfigDir() / TEXT("DefaultDataTypeConfig.ini"));
 	//公共文件夹
@@ -241,7 +304,6 @@ void FtpClientManager::CreateInstanceFolder(const FString& InstanceName)
 	if (!filePlatform.DirectoryExists(*InstanceANI))
 		filePlatform.CreateDirectory(*InstanceANI);
 }
-
 
 FString FtpClientManager::GetMylocalIPADDR()
 {
@@ -1068,9 +1130,13 @@ void FtpClientManager::HasDepencyThirdAsset(const FString& InGamePath, TArray<FS
 			}
 		}
 	}
-	Json.Empty();
-	SimpleFtpDataType::ConvertStructToString(Instinfo, Json);
-	FFileHelper::SaveStringToFile(Json, *InstDepFileName);
+
+	{
+		//保存上传者的选择
+		Json.Empty();
+		SimpleFtpDataType::ConvertStructToString(Instinfo, Json);
+		FFileHelper::SaveStringToFile(Json, *InstDepFileName);
+	}
 	for (const auto& temp : Instinfo.ThirdPartyAssetPackageName)
 	{
 		TArray<FString> FolderLevel;
@@ -1079,14 +1145,17 @@ void FtpClientManager::HasDepencyThirdAsset(const FString& InGamePath, TArray<FS
 	}
 }
 
-void FtpClientManager::UploadThirdPartyFolder(const FString& InFolder)
+void FtpClientManager::UploadThirdPartyFolder(const TArray<FString>& InFolders)
 {
-	FString FullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) + InFolder;
-	TArray<FString> ThirdPartyAsset;
-	IFileManager::Get().FindFilesRecursive(ThirdPartyAsset, *FullPath, TEXT("*"), true, false);
-	for (const auto& temp : ThirdPartyAsset)
+	for (const auto& tempfolder : InFolders)
 	{
-		FTP_UploadOneFile(temp);
+		FString FullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) + tempfolder;
+		TArray<FString> ThirdPartyAsset;
+		IFileManager::Get().FindFilesRecursive(ThirdPartyAsset, *FullPath, TEXT("*"), true, false);
+		for (const auto& temp : ThirdPartyAsset)
+		{
+			FTP_UploadOneFile(temp);
+		}
 	}
 }  
 
@@ -1390,18 +1459,26 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
 		return false;
 	}
+
+	TArray<FString> ThirdPartyName;
 	if(InGamePath.Contains(TEXT("/Instance/")))
-	{	//提交实例描述
-		if(!UploadInstanceDescriptToWeb(InGamePath))
+	{	
+		HasDepencyThirdAsset(InGamePath, ThirdPartyName);
+		if (ThirdPartyName.Num())
+		{
+			UploadThirdFolderDescriptToWeb(ThirdPartyName);
+			UploadThirdPartyDelegate = FUploadThirdPartyDelegate::CreateRaw(this, &FtpClientManager::UploadThirdPartyFolder);
+		}
+		//提交实例描述
+		if(!UploadInstanceDescriptToWeb(InGamePath, ThirdPartyName))
 			return false;
 	}
-	DeleteUselessFile();
-	TArray<FString> ThirdPartyName;
-	HasDepencyThirdAsset(InGamePath, ThirdPartyName);
-	if(ThirdPartyName.Num())
+	else
 	{
-		UploadThirdPartyDelegate = FUploadThirdPartyDelegate::CreateRaw(this, &FtpClientManager::UploadThirdPartyFolder);
+		//提交公共文件夹描述
+
 	}
+	DeleteUselessFile();	
 	TArray<FString> localFiles;  //本地路径下的所有文件 包括生成的依赖文件
 	TArray<FString> uploadfiles;  //需要上传的文件 如果是实例的话 就不用上传里面资源的依赖文件，公共文件夹的话就需要上传资源的依赖文件
 	TArray<FString> depenfile;
@@ -1426,7 +1503,7 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		}
 		//找出依赖资源的PackageName
 		TArray<FString> DepenAssetPackName;
-		for (const auto& tempdepenfile : depenfile)  //上传的是公共文件夹的话 这里会读取所有资源的.dep文件，上传实例文件夹的话这里只会读取  实例.dep
+		for (const auto& tempdepenfile : depenfile)		//上传的是公共文件夹的话 这里会读取所有资源的.dep文件，上传实例文件夹的话这里只会读取  实例.dep
 		{
 			//将依赖文件（Json）格式，转换成结构体
 			FString Json;
@@ -1452,7 +1529,7 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		//上传依赖资源,以及依赖资源的依赖文件
 		if (!UploadDepenceAssetAndDepences(DepenAssetPackName))
 			return false;
-		UploadThirdPartyDelegate.ExecuteIfBound(ThirdPartyName[0]);
+		UploadThirdPartyDelegate.ExecuteIfBound(ThirdPartyName);
 		return true;
 	}
 	return false;
@@ -1631,7 +1708,8 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 bool FtpClientManager::ftp_test(const FString& InFolderPath, const FString& URL)
 {
 	FString ip = GetMylocalIPADDR();
-	bool b = UploadInstanceDescriptToWeb(InFolderPath);
+	TArray<FString> third;
+	bool b = UploadInstanceDescriptToWeb(InFolderPath, third);
 	return b;
 	FWebSendData webdata;
 	webdata.file = "file";

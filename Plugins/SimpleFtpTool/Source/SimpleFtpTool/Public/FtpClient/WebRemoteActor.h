@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Blueprint/UserWidget.h"
 #include "WebRemoteActor.generated.h"
 
 
@@ -26,17 +25,16 @@ public:
 	FString GetMyPathName();
 
 	UFUNCTION(BlueprintCallable)
-		void Download(const TArray<FString>& InputVal);
+		void asd(const TArray<FString>& InputVal);
 
-	UFUNCTION(BlueprintCallable)
-		void asd(const FString& InputVal);
+	void ShowWeb();
 
 public:
 
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UUserWidget> TestUI;
+	class UDownloadWidget* DownloadUI;
 	
 private:
 	FString MyPathName;
+	FString WebURL;
 
 };

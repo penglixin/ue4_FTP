@@ -14,16 +14,16 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
-	"Modules": [
-		{
-			"Name": "SimpleFtpTool",
-			"Type": "Editor",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "SimpleHttpTool",
-			"Type": "Editor",
-			"LoadingPhase": "Default"
-		}
-	]
+  "Modules": [
+    {
+      "Name": "SimpleFtpTool",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "SimpleHttpTool",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ]
 }

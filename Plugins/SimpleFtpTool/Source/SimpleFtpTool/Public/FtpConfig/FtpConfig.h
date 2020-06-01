@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "Engine/EngineTypes.h"
+#include "FtpCommon/FtpTypes.h"
 #include "FtpConfig.generated.h"
 
 
@@ -34,14 +35,20 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "FtpInstProjectName", meta = (ToolTip = "the name of instance."))
 		FString InsProjectName;
 
-	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (EditCondition = "false", ToolTip = "the icon for this submit."))
+	UPROPERTY(config, EditAnywhere, Category = "FtpDescription", meta = (EditCondition = "false", ToolTip = "the web url."))
 		FString WebURL;
 
-	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the icon for this submit."))
-		FFilePath Icon;
+	UPROPERTY(config, EditAnywhere, Category = "FtpDescription|Instance", meta = (ToolTip = "the InstanceIcon for this submit."))
+		FFilePath InstanceIcon;
 
-	UPROPERTY(config, EditAnywhere, Category = "FtpSubmitDescription", meta = (ToolTip = "the description for this submit."))
-		FString SubmitDescription;
+	UPROPERTY(config, EditAnywhere, Category = "FtpDescription|Instance", meta = (ToolTip = "the description for this submit."))
+		FString InstanceDescription;
+
+	UPROPERTY(config, EditAnywhere, Category = "FtpDescription|ThirdParty", meta = (ToolTip = "the ThirdPartyIcon for this submit."))
+		TArray<FSubmitThirdPartyInfo> ThirdPartyDescriptions;
+
+	UPROPERTY(config, EditAnywhere, Category = "FtpDescription|Common", meta = (ToolTip = "the CommonIcons for this submit."))
+		TArray<FSubmitAssetInfo> CommonDescriptions;
 	
 	UPROPERTY(config, EditAnyWhere, Category = "FtpDepCachePath", meta = (ToolTip = "the path to save server dep file."))
 		FDirectoryPath CachePath;

@@ -20,7 +20,6 @@
 #include "FtpSlate/FtpViewType.h"
 #include "FtpSlate/FileTree/FilePrasing.h"
 #include "FtpSlate/FileTree/SFolder.h"
-
 #include "Kismet/GameplayStatics.h"
 #include "FtpClient/WebRemoteActor.h"
 
@@ -35,7 +34,6 @@ struct FSimpleFtpViewID
 
 const FName FSimpleFtpViewID::ViewportID(TEXT("UnrealPakViewportID"));
 const FName FSimpleFtpViewID::FiletreeID(TEXT("UnrealPakFiletreeID"));
-
 
 
 #define LOCTEXT_NAMESPACE "FSimpleFtpToolModule"
@@ -96,7 +94,7 @@ void FSimpleFtpToolModule::StartupModule()
 
 	RegisterTabSpawners();
 
-	if (!GMeshComponent)
+	/*if (!GMeshComponent)
 	{
 		GMeshComponent = NewObject<UStaticMeshComponent>();
 		GMeshComponent->AddToRoot();
@@ -105,7 +103,7 @@ void FSimpleFtpToolModule::StartupModule()
 	{
 		GProceduralMeshComponent = NewObject<UProceduralMeshComponent>();
 		GProceduralMeshComponent->AddToRoot();
-	}
+	}*/
 	SimpleOneParamDelegate.BindRaw(this, &FSimpleFtpToolModule::UpdateFiles);
 }
 
@@ -116,16 +114,16 @@ void FSimpleFtpToolModule::ShutdownModule()
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(SimpleFtpToolTabName);
 	FtpClientManager::Destroy();
 
-	if (GMeshComponent)
+	/*if (GMeshComponent)
 	{
 		GMeshComponent->ConditionalBeginDestroy();
-		//GMeshComponent = nullptr;
+		GMeshComponent = nullptr;
 	}
 	if (GProceduralMeshComponent)
 	{
 		GProceduralMeshComponent->ConditionalBeginDestroy();
-		//GProceduralMeshComponent = nullptr;
-	}
+		GProceduralMeshComponent = nullptr;
+	}*/
 }
 
 TSharedRef<SDockTab> FSimpleFtpToolModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
@@ -385,21 +383,21 @@ void FSimpleFtpToolModule::SubmitSelectedSource(TArray<FString> NewPaths)
 
 void FSimpleFtpToolModule::PluginButtonClicked()
 {
-	FGlobalTabmanager::Get()->InvokeTab(SimpleFtpToolTabName);
+	//FGlobalTabmanager::Get()->InvokeTab(SimpleFtpToolTabName);
 
 	TArray<AActor*> arr;
 	UWorld* World = GEditor->GetEditorWorldContext().World();
 	UGameplayStatics::GetAllActorsOfClass(World, AWebRemoteActor::StaticClass(), arr);
 	if (arr.Num())
 	{
-		AWebRemoteActor* web = Cast<AWebRemoteActor>(arr[0]);
-		if(web)
+		AWebRemoteActor* WebActor = Cast<AWebRemoteActor>(arr[0]);
+		if(WebActor)
 		{
-			web->asd(TEXT("addddd"));
+			WebActor->ShowWeb();
 		}
 	}
-
 	return;
+	
 	TArray<FString> FileNames;
 	FTP_INSTANCE->FTP_ListFile(TEXT(""), FileNames);
 	SimpleOneParamDelegate.ExecuteIfBound(FileNames);
@@ -420,7 +418,7 @@ void FSimpleFtpToolModule::RegisterTabSpawners()
 
 TSharedRef<SWidget> FSimpleFtpToolModule::CreateEditor()
 {
-	//水平3：7拆分，3的部分在按4：6垂直拆分
+	//水平4：6拆分
 	TSharedRef<FTabManager::FLayout> LayOut = FTabManager::NewLayout("FSimpleFtp_Layout")
 		->AddArea
 		(
@@ -456,5 +454,5 @@ void FSimpleFtpToolModule::AddToolbarExtension(FToolBarBuilder& Builder)
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FSimpleFtpToolModule, SimpleFtpTool)

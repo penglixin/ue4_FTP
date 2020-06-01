@@ -2,6 +2,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
 #include "FtpTypes.generated.h"
 
 
@@ -63,7 +64,7 @@ enum class EFolderType : uint8
 
 
 
-//for DataType
+//for DataType Wood,Water...
 USTRUCT(BlueprintType)
 struct FDataTypeInfo
 {
@@ -79,7 +80,7 @@ struct FDataTypeInfo
 		FString TYPEDESCRIPTION;
 
 };
-//for DataType
+//for DataType Wood,Water...
 USTRUCT(BlueprintType)
 struct FDataInfoList
 {
@@ -168,6 +169,38 @@ struct FInstanceInfo
 	void Empty();
 };
 
+//提交公共资源和第三方文件夹的描述信息
+USTRUCT(BlueprintType)
+struct FSubmitAssetInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnyWhere)
+		FString AssetName;
+
+	UPROPERTY(EditAnyWhere)
+		FFilePath IconPath;
+
+	UPROPERTY(EditAnyWhere)
+		FString AssetDescription;
+};
+
+USTRUCT(BlueprintType)
+struct FSubmitThirdPartyInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+		UPROPERTY(EditAnyWhere)
+		FString ThirdPartyName;
+
+	UPROPERTY(EditAnyWhere)
+		FFilePath IconPath;
+
+	UPROPERTY(EditAnyWhere)
+		FString ThirdPartyDescription;
+
+};
+
 
 namespace SimpleFtpDataType
 {
@@ -184,5 +217,5 @@ namespace SimpleFtpDataType
 
 
 
-//委托
-DECLARE_DELEGATE_OneParam(FUploadThirdPartyDelegate, const FString&);
+//上传第三方资源文件夹委托
+DECLARE_DELEGATE_OneParam(FUploadThirdPartyDelegate, const TArray<FString>&);
