@@ -30,7 +30,7 @@ public:
 	//3. 第三方文件加上传
 	bool UploadInstanceDescriptToWeb(const FString& InFolderPath, const TArray<FString>& ThirdFolders);
 
-	bool UploadSingleAssetDescriptToWeb(const FString& InAssetPath);
+	bool UploadAssetsDescriptToWeb(const TArray<FString>& InAssetPaths);
 
 	bool UploadThirdFolderDescriptToWeb(const TArray<FString>& InThirdPath);
 	
