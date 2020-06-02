@@ -283,11 +283,13 @@ FtpClientManager::~FtpClientManager()
 	if (controlSocket)
 	{
 		controlSocket->Close();
+		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(controlSocket);
 		controlSocket = nullptr;
 	}
 	if (dataSocket)
 	{
 		dataSocket->Close();
+		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(dataSocket);
 		dataSocket = nullptr;
 	}
 }
@@ -1741,6 +1743,10 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
 		return false;
 	}
+
+	if (!UploadAssetsDescriptToWeb(InPackNames))
+		return false;
+
 	//开始上传文件,先找到所有合法依赖
 	TArray<FString> PackNames = InPackNames;
 	for (const auto& pakname : InPackNames)

@@ -5,6 +5,7 @@
 #include "FtpClient/FtpClient.h"
 #include "Editor.h"
 #include "FtpUMG/DownloadWidget.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 
 #define LOCTEXT_NAMESPACE "WebRemoteActor"
@@ -17,6 +18,8 @@ AWebRemoteActor::AWebRemoteActor()
 	MyPathName = this->GetPathName();
 
 	WebURL = FString("http://192.168.0.186:8080/index.html/#/?objectPath=") + MyPathName;
+
+	
 }
 
 // Called when the game starts or when spawned
@@ -43,6 +46,7 @@ void AWebRemoteActor::ShowWeb()
 {
 	UWorld* EWorld = GEditor->GetEditorWorldContext().World();
 	check(EWorld);
+	UKismetSystemLibrary::ExecuteConsoleCommand(EWorld, FString("WebControl.StartServer"));		//¿ªÆô¼àÌý
 	DownloadUI = CreateWidget<UDownloadWidget>(EWorld, LoadClass<UDownloadWidget>(this, TEXT("WidgetBlueprint'/SimpleFtpTool/WebWidget.WebWidget_C'")));
 	DownloadUI->webBrowser->SetInitialURL(WebURL);
 	if(DownloadUI)
