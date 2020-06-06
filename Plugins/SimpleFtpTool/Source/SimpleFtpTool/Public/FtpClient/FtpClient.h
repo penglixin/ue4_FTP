@@ -85,6 +85,8 @@ public:
 	void HasDepencyThirdAsset(const FString& InGamePath, TArray<FString>& ThirdPartyName);
 	//提交第三方文件夹
 	void UploadThirdPartyFolder(const TArray<FString>& InFolders);
+	//下载实例的依赖文件
+	bool DownloadDepenceAsset(const FString& InInstFolderPath);
 	
 private:
 	//获取本地IP

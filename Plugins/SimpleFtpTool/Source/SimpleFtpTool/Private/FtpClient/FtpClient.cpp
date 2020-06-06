@@ -1196,7 +1196,6 @@ void FtpClientManager::HasDepencyThirdAsset(const FString& InGamePath, TArray<FS
 			}
 		}
 	}
-
 	{
 		//保存上传者的选择
 		Json.Empty();
@@ -1223,7 +1222,79 @@ void FtpClientManager::UploadThirdPartyFolder(const TArray<FString>& InFolders)
 			FTP_UploadOneFile(temp);
 		}
 	}
-}  
+}
+
+bool FtpClientManager::DownloadDepenceAsset(const FString& InInstFolderPath) //Instance/ProjA
+{
+	FString ProjContentFull = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+	FString InstName = FPaths::GetCleanFilename(InInstFolderPath) + GetDefault<UFtpConfig>()->Suffix;
+	FString InstFileName = ProjContentFull + InInstFolderPath / InstName;
+	if (IFileManager::Get().FileExists(*InstFileName))
+	{
+		FInstanceInfo InstInfo;
+		FString InstJson;
+		FFileHelper::LoadFileToString(InstJson, *InstFileName);
+		if (SimpleFtpDataType::ConvertStringToStruct(InstJson, InstInfo))
+		{
+			bool bUploadAllAsset = InstInfo.UploadAllAsset;
+			TArray<FString> CommonAssetPackageName;
+			TArray<FString> ThirdPartyAssetPackageName;
+			for (const auto& temp : InstInfo.CommonAssetPackageName) 
+			{
+				FString downloadPath = temp;
+				downloadPath.RemoveFromStart(TEXT("/Game/"));
+				CommonAssetPackageName.Add(downloadPath);
+			}
+			for (const auto& temp : InstInfo.ThirdPartyAssetPackageName)
+			{
+				FString downloadPath = temp;
+				downloadPath.RemoveFromStart(TEXT("/Game/"));
+				ThirdPartyAssetPackageName.Add(downloadPath);
+			}
+			//下载Common资源的依赖资源
+			TArray<FString> DepDownloadFiles;
+			for (const auto& temp : CommonAssetPackageName)
+			{
+				FString depfile = temp.Replace(TEXT(".uasset"), *(GetDefault<UFtpConfig>()->Suffix));
+				FTP_DownloadOneFile(depfile);
+				FString commondepfile = ProjContentFull + depfile;
+				FDependenList DepList;
+				FString Json;
+				FFileHelper::LoadFileToString(Json, *commondepfile);
+				if (SimpleFtpDataType::ConvertStringToStruct(Json, DepList))
+				{
+					FString SelfAsset = DepList.SourceAssetName;
+					SelfAsset.RemoveFromStart(TEXT("/Game/"));
+					DepDownloadFiles.Add(SelfAsset);
+					for (const auto& tempdep : DepList.DepenArr)
+					{
+						FString name = tempdep.DepenAssetPackName;
+						name.RemoveFromStart(TEXT("/Game/"));
+						DepDownloadFiles.Add(name);
+					}
+				}
+			}
+			for (const auto& temp : DepDownloadFiles)
+			{
+				FTP_DownloadOneFile(temp);
+			}
+			//第三方资源下载
+			if (1)
+			{
+				FString ThirdAssetName = ThirdPartyAssetPackageName[0];
+				ThirdAssetName.RemoveFromStart(TEXT("/Game/"));
+				FString L, R;
+				ThirdAssetName.Split(TEXT("/"), &L, &R);
+				FTP_DownloadFiles(L);
+			}
+			else
+			{
+				//获取第三方文件依赖，需修改上传第三方资源代码...
+			}
+		}
+	}
+	return false;
+}
 
 
 /******************************************************************************/
@@ -1420,10 +1491,10 @@ bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder)
 {
 	EFileType fileType = JudgeserverPath(serverFolder);
 	bool bSuccessed = false;
-	TArray<FString> FileArr; 
+	TArray<FString> FileArr;
 	switch (fileType)
 	{
-	case EFileType::FOLDER:
+	case EFileType::FOLDER:  //Com_Material   或者 Instance/ProjA
 		if(FTP_ListFile(serverFolder, FileArr, false))
 		{
 			for (const auto& Tempfilename : FileArr)
@@ -1432,12 +1503,14 @@ bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder)
 				if (!bSuccessed)
 					return false;
 			}
+			DownloadDepenceAsset(serverFolder);
 		}
-break;
+		break;
 	case EFileType::FILE:
 		bSuccessed = FTP_DownloadOneFile(serverFolder);
 		break;
 	}
+
 	return bSuccessed;
 }
 
@@ -1526,6 +1599,8 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		return false;
 	}
 
+	TArray<FString> localFiles;  //本地路径下的所有文件 包括生成的依赖文件
+	GetAllFileFromLocalPath(FullPath, localFiles);
 	DeleteUselessFile();
 	TArray<FString> ThirdPartyName;
 	if(InGamePath.Contains(TEXT("/Instance/")))
@@ -1542,65 +1617,60 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 	}
 	else
 	{
-		
-	}
-	TArray<FString> localFiles;  //本地路径下的所有文件 包括生成的依赖文件
-	TArray<FString> uploadfiles;  //需要上传的文件 如果是实例的话 就不用上传里面资源的依赖文件，公共文件夹的话就需要上传资源的依赖文件
-	TArray<FString> depenfile;
-	if (GetAllFileFromLocalPath(FullPath, localFiles))
-	{
 		//提交公共文件夹描述
 		if (!UploadAssetsDescriptToWeb(localFiles))
 			return false;
-		for (const auto& Tempfilename : localFiles)
-		{
-			if (Tempfilename.Contains(TEXT("Ins_")) && Tempfilename.Contains(GetDefault<UFtpConfig>()->Suffix))
-			{
-				//实例文件夹下的资源依赖文件不上传
-				continue;
-			}
-			uploadfiles.Add(Tempfilename);
-		}
-		//上传资源 以及依赖文件
-		for (const auto& Tempfilename : uploadfiles)
-		{
-			if (Tempfilename.Contains(GetDefault<UFtpConfig>()->Suffix))
-				depenfile.Add(Tempfilename);
-			if (!FTP_UploadOneFile(Tempfilename))
-				return false;
-		}
-		//找出依赖资源的PackageName
-		TArray<FString> DepenAssetPackName;
-		for (const auto& tempdepenfile : depenfile)		//上传的是公共文件夹的话 这里会读取所有资源的.dep文件，上传实例文件夹的话这里只会读取  实例.dep
-		{
-			//将依赖文件（Json格式），转换成结构体
-			FString Json;
-			FDependenList depenlist;
-			FInstanceInfo InstInfo;
-			FFileHelper::LoadFileToString(Json, *tempdepenfile);
-			if (SimpleFtpDataType::ConvertStringToStruct(Json, depenlist))
-			{
-				for (const auto& tempdep : depenlist.DepenArr)
-				{
-					if(!tempdep.DepenAssetPackName.Contains(FolderName))  //防止重复上传
-						DepenAssetPackName.AddUnique(tempdep.DepenAssetPackName);
-				}
-			}
-			else if (SimpleFtpDataType::ConvertStringToStruct(Json, InstInfo))
-			{
-				for (const auto& tempdep : InstInfo.CommonAssetPackageName)
-				{
-					DepenAssetPackName.AddUnique(tempdep);
-				}
-			}
-		}
-		//上传依赖资源,以及依赖资源的依赖文件
-		if (!UploadDepenceAssetAndDepences(DepenAssetPackName))
-			return false;
-		UploadThirdPartyDelegate.ExecuteIfBound(ThirdPartyName);
-		return true;
 	}
-	return false;
+	
+	TArray<FString> uploadfiles;  //需要上传的文件 如果是实例的话 就不用上传里面资源的依赖文件，公共文件夹的话就需要上传资源的依赖文件
+	TArray<FString> depenfile;
+	for (const auto& Tempfilename : localFiles)
+	{
+		if (Tempfilename.Contains(TEXT("Ins_")) && Tempfilename.Contains(GetDefault<UFtpConfig>()->Suffix))
+		{
+			//实例文件夹下的资源依赖文件不上传
+			continue;
+		}
+		uploadfiles.Add(Tempfilename);
+	}
+	//上传资源 以及依赖文件
+	for (const auto& Tempfilename : uploadfiles)
+	{
+		if (Tempfilename.Contains(GetDefault<UFtpConfig>()->Suffix))
+			depenfile.Add(Tempfilename);
+		if (!FTP_UploadOneFile(Tempfilename))
+			return false;
+	}
+	//找出依赖资源的PackageName
+	TArray<FString> DepenAssetPackName;
+	for (const auto& tempdepenfile : depenfile)	//上传的是公共文件夹的话 这里会读取所有资源的.dep文件，上传实例文件夹的话这里只会读取  实例.dep
+	{
+		//将依赖文件（Json格式），转换成结构体
+		FString Json;
+		FDependenList depenlist;
+		FInstanceInfo InstInfo;
+		FFileHelper::LoadFileToString(Json, *tempdepenfile);
+		if (SimpleFtpDataType::ConvertStringToStruct(Json, depenlist))
+		{
+			for (const auto& tempdep : depenlist.DepenArr)
+			{
+				if (!tempdep.DepenAssetPackName.Contains(FolderName))  //防止重复上传
+					DepenAssetPackName.AddUnique(tempdep.DepenAssetPackName);
+			}
+		}
+		else if (SimpleFtpDataType::ConvertStringToStruct(Json, InstInfo))
+		{
+			for (const auto& tempdep : InstInfo.CommonAssetPackageName)
+			{
+				DepenAssetPackName.AddUnique(tempdep);
+			}
+		}
+	}
+	//上传依赖资源,以及依赖资源的依赖文件
+	if (!UploadDepenceAssetAndDepences(DepenAssetPackName))
+		return false;
+	UploadThirdPartyDelegate.ExecuteIfBound(ThirdPartyName);
+	return true;
 }
 
 //只有公共资源才能上传单个资源

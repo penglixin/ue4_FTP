@@ -61,6 +61,7 @@ void AWebRemoteActor::ShowWeb()
 		WebWindow->SetContent(DownloadUI->TakeWidget());
 		FSlateApplication::Get().AddWindow(WebWindow);
 	}
+	FString url = DownloadUI->webBrowser->GetUrl();
 }
 
 #undef LOCTEXT_NAMESPACE

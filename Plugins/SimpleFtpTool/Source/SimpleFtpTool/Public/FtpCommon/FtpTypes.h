@@ -85,8 +85,7 @@ USTRUCT(BlueprintType)
 struct FDataInfoList
 {
 	GENERATED_USTRUCT_BODY()
-
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FString FILEEDESCRIPTION;
 
