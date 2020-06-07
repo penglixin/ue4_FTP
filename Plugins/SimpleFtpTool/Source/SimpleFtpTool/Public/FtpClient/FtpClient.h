@@ -17,7 +17,7 @@ public:
 	FtpClientManager();
 	~FtpClientManager();
 	static FtpClientManager* Get();
-	static void Destroy(); 
+	static void Destroy();
 	//初始化文件目录结构
 	void Initialize_Folder();
 	//创建实例文件夹

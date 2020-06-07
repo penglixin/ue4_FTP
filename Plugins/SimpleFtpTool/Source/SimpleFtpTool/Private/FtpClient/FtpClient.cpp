@@ -790,55 +790,7 @@ bool FtpClientManager::FileNameValidationOfOneFolder(TArray<FString>& NoValidFil
 		break;
 	case EFolderType::TEXTURE:
 		//开始判断文件命名是否合法
-		NAME_VALIDATION_FOLDER("TEX")
-		/*for (const auto& TempName : AllFileNames)
-		{
-			FString UperFileName = TempName.ToUpper(); 
-			numArr1.Add(TempName); 
-			TArray<FString> partArr; 
-			UperFileName.ParseIntoArray(partArr, TEXT("_"), false); 
-			if (partArr.Num() != 4)
-			{
-				bAllValid = false; 
-				NoValidFiles.Add(TempName); 
-				numArr2.Add(FGuid::NewGuid().ToString());
-				continue;
-			}
-			if (!partArr[0].Equals(TEXT("TEX")))
-			{
-				bAllValid = false;
-				NoValidFiles.Add(TempName);
-				numArr2.Add(FGuid::NewGuid().ToString());
-				continue;
-			}
-			bool bCorrect = false;
-			for (const auto& TempAeestType : InfoList.DATATYPRARR)
-			{
-				if (!(partArr[1].Equals(TempAeestType.TYPENAME)) && !(partArr[1].Equals(TempAeestType.TYPEABBR)))
-				{
-					continue;
-				}
-				else
-				{
-					bCorrect = true;
-					break;
-				}
-			}
-			if (!bCorrect)
-			{
-				bAllValid = false;
-				NoValidFiles.Add(TempName);
-				numArr2.Add(FGuid::NewGuid().ToString());
-				continue;
-			}
-			numArr2.AddUnique(partArr[2]);
-			if (numArr1.Num() != numArr2.Num())
-			{
-				bAllValid = false;
-				NoValidFiles.Add(TempName);
-				numArr2.Add(FGuid::NewGuid().ToString());
-			}
-		}*/
+		NAME_VALIDATION_FOLDER("TEX")		
 		break;
 	default:
 		bAllValid = false;
@@ -1255,9 +1207,9 @@ bool FtpClientManager::DownloadDepenceAsset(const FString& InInstFolderPath) //I
 			TArray<FString> DepDownloadFiles;
 			for (const auto& temp : CommonAssetPackageName)
 			{
-				FString depfile = temp.Replace(TEXT(".uasset"), *(GetDefault<UFtpConfig>()->Suffix));
+				FString depfile = temp + GetDefault<UFtpConfig>()->Suffix;
 				FTP_DownloadOneFile(depfile);
-				FString commondepfile = ProjContentFull + depfile;
+				FString commondepfile = ProjContentFull + temp + GetDefault<UFtpConfig>()->Suffix;
 				FDependenList DepList;
 				FString Json;
 				FFileHelper::LoadFileToString(Json, *commondepfile);
@@ -1265,6 +1217,7 @@ bool FtpClientManager::DownloadDepenceAsset(const FString& InInstFolderPath) //I
 				{
 					FString SelfAsset = DepList.SourceAssetName;
 					SelfAsset.RemoveFromStart(TEXT("/Game/"));
+					SelfAsset += TEXT(".uasset");
 					DepDownloadFiles.Add(SelfAsset);
 					for (const auto& tempdep : DepList.DepenArr)
 					{
@@ -1293,7 +1246,7 @@ bool FtpClientManager::DownloadDepenceAsset(const FString& InInstFolderPath) //I
 			}
 		}
 	}
-	return false;
+	return true;
 }
 
 
@@ -1608,7 +1561,6 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		HasDepencyThirdAsset(InGamePath, ThirdPartyName);
 		if (ThirdPartyName.Num())
 		{
-			UploadThirdFolderDescriptToWeb(ThirdPartyName);
 			UploadThirdPartyDelegate = FUploadThirdPartyDelegate::CreateRaw(this, &FtpClientManager::UploadThirdPartyFolder);
 		}
 		//提交实例 以及 第三方 描述
@@ -1728,50 +1680,6 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		{
 		case EFolderType::ANIMATION:
 			NAME_VALIDATION_ASSET("ANIM");
-				/*UperFileName = AssetName.ToUpper(); 
-				numArr1.Add(AssetName); 
-				UperFileName.ParseIntoArray(partArr, TEXT("_"), false); 
-				if (partArr.Num() != 4)
-				{
-					bAllValid = false; 
-					NameNotValidFiles.Add(AssetName); 
-					numArr2.Add(FGuid::NewGuid().ToString()); 
-					continue; 
-				}
-				if (!partArr[0].Equals(TEXT("")))
-				{
-					bAllValid = false;
-					NameNotValidFiles.Add(AssetName);
-					numArr2.Add(FGuid::NewGuid().ToString());
-					continue;
-				}
-				for (const auto& TempAeestType : InfoList.DATATYPRARR)
-				{
-					if (!(partArr[1].Equals(TempAeestType.TYPEABBR)) && !(partArr[1].Equals(TempAeestType.TYPENAME)))
-					{
-						continue;
-					}
-					else
-					{
-						bCorrect = true;
-						continue;
-					}
-				}
-				if (!bCorrect)
-				{
-					bAllValid = false;
-					NameNotValidFiles.Add(AssetName);
-					numArr2.Add(FGuid::NewGuid().ToString());
-					continue;
-				}
-				numArr2.AddUnique(partArr[2]);
-				if (numArr1.Num() != numArr2.Num())
-				{
-					bAllValid = false;
-					NameNotValidFiles.Add(AssetName);
-					numArr2.Add(FGuid::NewGuid().ToString());
-				}
-				break;*/
 		case EFolderType::MATERIAL:
 			//开始判断文件命名是否合法
 			NAME_VALIDATION_ASSET("MAT");
