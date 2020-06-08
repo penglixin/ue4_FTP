@@ -11,20 +11,12 @@ UFtpConfig::UFtpConfig()
 	IPlatformFile& platform = FPlatformFileManager::Get().GetPlatformFile();
 	if (CachePath.Path.IsEmpty())
 	{
-		CachePath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("DepCache"));
-		if (!platform.DirectoryExists(*CachePath.Path))
-		{
-			platform.CreateDirectory(*CachePath.Path);
-		}
+		CachePath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir());
 	}
 	
 	if (DownloadPath.Path.IsEmpty())
 	{
-		DownloadPath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
-		if (!platform.DirectoryExists(*DownloadPath.Path))
-		{
-			platform.CreateDirectory(*DownloadPath.Path);
-		}
+		DownloadPath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());		
 	}
 	sleeptime = 0.2f;
 

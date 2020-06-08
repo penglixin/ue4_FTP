@@ -149,7 +149,7 @@ if (IFileManager::Get().FileExists(*DepLocalFullPath))\
 	{\
 		LocalValidCode = DepInfo.ValidCode;\
 	}\
-	if (FTP_DownloadOneFile(DepServerPath))\
+	if (FTP_DownloadOneFile(DepServerPath,GetDefault<UFtpConfig>()->CachePath.Path))\
 	{\
 		Json.Empty();\
 		DepInfo.Empty();\
@@ -161,6 +161,10 @@ if (IFileManager::Get().FileExists(*DepLocalFullPath))\
 		}\
 		IFileManager::Get().Delete(*DepCachePath);\
 	}\
+}\
+else\
+{\
+	return false;\
 }
 
 
@@ -173,7 +177,11 @@ if (IFileManager::Get().FileExists(*localfilename))\
 		LocalValidCode = instInfo.InstValidCode;\
 	}\
 }\
-if (FTP_DownloadOneFile(serverfilename))\
+else\
+{\
+	return false;\
+}\
+if (FTP_DownloadOneFile(serverfilename,GetDefault<UFtpConfig>()->CachePath.Path))\
 {\
 	Json.Empty();\
 	instInfo.Empty();\
@@ -185,3 +193,4 @@ if (FTP_DownloadOneFile(serverfilename))\
 	}\
 	IFileManager::Get().Delete(*DepCachePath); \
 }
+

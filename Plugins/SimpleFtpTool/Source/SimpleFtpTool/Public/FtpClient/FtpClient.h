@@ -9,7 +9,6 @@
 #include "SimpleHttpManager.h"
 
 
-
 class SIMPLEFTPTOOL_API FtpClientManager
 {
 
@@ -46,7 +45,7 @@ public:
 	//列举文件夹 (相对路径)
 	bool FTP_ListFile(const FString& serverPath, TArray<FString>& OutFiles, bool bIncludeFolder = true);
 	//下载单个文件 规定文件路径用/隔开 如：/Folder1/Folder2/adadd.txt localpath:需要用绝对路径如：E:/Game/Folder
-	bool FTP_DownloadOneFile(const FString& serverFileName);
+	bool FTP_DownloadOneFile(const FString& serverFileName, FString Savepath = GetDefault<UFtpConfig>()->DownloadPath.Path);
 	//下载文件夹里的所有文件 serverFolder:如 /asd				localpath:需要用绝对路径如：E:/Game/Folder
 	bool FTP_DownloadFiles(const FString& serverFolder);
 	//上传单个文件
@@ -78,7 +77,7 @@ public:
 	//判断服务器上是否存在该资源（发送SIZE 命令，根据服务器返回的响应码判断文件是否存在，然后再根据用户做出的选择是否覆盖服务器文件，这一步并没有使用到校验码）
 	bool OverrideAssetOnServer(const FString& FileFullPath);
 	//校验资源校验码
-	bool IsAssetValidCodeSame(const FString& FileFullPath);
+	bool IsAssetValidCodeSame(const FString& InPakName);
 	//校验实例校验码
 	bool IsInstValidCodeSame(const FString& InstName);
 	//检查实例是否依赖第三方资源 传入实例文件夹路径
@@ -106,7 +105,6 @@ private:
 	//判断传入的serverPath是文件 还是 文件夹
 	EFileType JudgeserverPath(const FString& InserverPath);
 	
-
 private:
 	//Debug
 	void Print(const FString& Mesg, float Time = 100.f, FColor Color = FColor::Yellow);
