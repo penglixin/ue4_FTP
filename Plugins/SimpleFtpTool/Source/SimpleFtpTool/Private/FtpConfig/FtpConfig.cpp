@@ -10,7 +10,7 @@ UFtpConfig::UFtpConfig()
 	
 	DownloadPath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
 
-	PluginPath.Path = FPaths::ConvertRelativePathToFull(FPaths::EngineDir()) + TEXT("Plugins/Marketplace/");
+	PluginPath.Path = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 
 	sleeptime = 0.2f;
 

@@ -51,7 +51,7 @@ public:
 	//下载文件夹里的所有文件 serverFolder:如 /asd				localpath:需要用绝对路径如：E:/Game/Folder
 	bool FTP_DownloadFiles(const FString& serverFolder, FString Savepath = GetDefault<UFtpConfig>()->DownloadPath.Path);
 	//上传单个文件
-	bool FTP_UploadOneFile(const FString& localFileName, bool bIsPlugin = false);
+	bool FTP_UploadOneFile(const FString& localFileName);
 	//上传文件夹里的所有文件
 	bool FTP_UploadFilesByFolder(const FString& InGamePath, TArray<FString>& NameNotValidFiles, TArray<FInvalidDepInfo>& DepenNotValidFiles);
 	//根据PackageName上传资源
@@ -82,6 +82,8 @@ public:
 	bool IsAssetValidCodeSame(const FString& InPakName);
 	//校验实例校验码
 	bool IsInstValidCodeSame(const FString& InstName);
+	//校验插件是否存在
+	bool IsPluginExist(const FString& PlugName);
 	//检查实例是否依赖第三方资源 传入实例文件夹路径
 	void HasDepencyThirdAsset(const FString& InGamePath, TArray<FString>& ThirdPartyName, TArray<FString>& PluginName);
 	//提交第三方文件夹

@@ -17,16 +17,6 @@
 #endif
 
 
-//判断 资源 是否属于第三方资源
-bool IsThirdPartyAsset(const FString& InAssetpath)
-{
-	//不包含 “/Com_” 、“/Ins_”
-	if (!InAssetpath.Contains(TEXT("/Com_")) && !InAssetpath.Contains(TEXT("/Ins_")))
-		return true;
-	else
-		return false;
-}
-
 //传入文件路径，获取文件大小
 int64_t getFileSize(const FString& InfilePath)
 {
@@ -189,10 +179,10 @@ bool FtpClientManager::UploadInstanceDescriptToWeb(const FString& InFolderPath, 
 		TArray<FString> UploadPlugins;
 		for (const auto& temp : InPluginPath)
 		{
-			//G:/EpicGame/UE4/UE_4.24/Engine/Plugins/Marketplace/插件名
-			FString PluginFullPath = GetDefault<UFtpConfig>()->PluginPath.Path + temp;
+			//  G:/EpicGame/UE4/UE_4.24/Engine/Plugins/Marketplace/插件名
+			FString PluginFullPath = GetDefault<UFtpConfig>()->PluginPath.Path + TEXT("Plugins/Marketplace/") + temp;
 			FString PluginValidCode = PluginFullPath / temp + GetDefault<UFtpConfig>()->Suffix;
-			if (!IFileManager::Get().DirectoryExists(*PluginValidCode))
+			if (!IFileManager::Get().FileExists(*PluginValidCode))
 			{
 				UploadPlugins.Add(temp);
 			}
@@ -204,6 +194,8 @@ bool FtpClientManager::UploadInstanceDescriptToWeb(const FString& InFolderPath, 
 
 bool FtpClientManager::UploadAssetsDescriptToWeb(const TArray<FString>& InAssetPaths)	//传进来的可能是绝对路径，可能是PackageName
 {
+	if(InAssetPaths.Num() < 1)
+		return true;
 	FString Tips;
 	Tips = TEXT("Have you set up the common asset submit description for this submission? \"No\" to stop upload and set up these information in project setting.");
 	EAppReturnType::Type returntype;
@@ -220,10 +212,8 @@ bool FtpClientManager::UploadAssetsDescriptToWeb(const TArray<FString>& InAssetP
 			continue;
 		TArray<FString> folderlevel;
 		temp.ParseIntoArray(folderlevel, TEXT("/"));
-		FString AssetNameWithExtension = folderlevel[folderlevel.Num() - 1];   //Mat_Wood_0_desc.uasset
-		FString AssetNameNoExtension = AssetNameWithExtension;   //Mat_Wood_0_desc
-		AssetNameNoExtension.RemoveFromEnd(TEXT(".uasset"));
-		FString AssetPath = folderlevel[folderlevel.Num() - 2] / folderlevel[folderlevel.Num() - 1];	//  Com_Material/Mat_Wood_0_desc.uasset
+		FString AssetNameNoExtension = folderlevel[folderlevel.Num() - 1];   //Mat_Wood_0_desc.uasset
+		FString AssetPath = folderlevel[folderlevel.Num() - 2] / folderlevel[folderlevel.Num() - 1] + TEXT(".uasset");	//  Com_Material/Mat_Wood_0_desc.uasset
 		
 		bool bContain = false;
 		FString Desc;
@@ -302,8 +292,8 @@ bool FtpClientManager::UploadPluginDescriptToWeb(const TArray<FString>& InPlugin
 {
 	for (const auto& temp : InPluginPath)
 	{
-		FString IconFilePath = GetDefault<UFtpConfig>()->PluginPath.Path + temp + TEXT("/Resources/") + TEXT("Icon128.png");
-		FString upluginFilePath = GetDefault<UFtpConfig>()->PluginPath.Path + temp + TEXT("/") + temp + TEXT(".uplugin");
+		FString IconFilePath = GetDefault<UFtpConfig>()->PluginPath.Path + TEXT("Plugins/Marketplace/") + temp + TEXT("/Resources/") + TEXT("Icon128.png");
+		FString upluginFilePath = GetDefault<UFtpConfig>()->PluginPath.Path + TEXT("Plugins/Marketplace/") + temp + TEXT("/") + temp + TEXT(".uplugin");
 		FString pluginDesc;
 		{
 			TArray<FString> pluginInfo;
@@ -331,8 +321,8 @@ bool FtpClientManager::UploadPluginDescriptToWeb(const TArray<FString>& InPlugin
 		ImageBase64 = FBase64::Encode(ImageData);
 		FString Preffix = TEXT("data:image/") + Extension + TEXT(";base64,");
 		WebData.describe = Description;
-		WebData.name = TEXT("Plugins/") + temp;
-		WebData.filePath = temp;
+		WebData.name = TEXT("Plugins/Marketplace/") + temp;
+		WebData.filePath = TEXT("Plugins/Marketplace/") + temp;
 		WebData.file = Preffix + ImageBase64;
 		FString Json = WebData.ConvertToString();
 		HTTP_INSTANCE->PostIconAndDesc(WebUrl, Json);
@@ -452,6 +442,7 @@ FString FtpClientManager::GetMylocalIPADDR()
 	}
 	return Myip;
 }
+
 
 /******************************************************************************/
 /******************************************************************************/
@@ -906,7 +897,7 @@ bool FtpClientManager::ValidationDependenceOfOneAsset(const FString& InGamePath,
 		for (const auto& TempDep : TheAssetDependence)
 		{
 			//公共资源不能引用其他任何实例 以及第三方资源包和插件
-			if(!TempDep.Contains("/Com_"))  // || TempDep.Contains(TEXT("/Engine/")) || TempDep.Contains(TEXT("/Script/")) || IsThirdPartyAsset(TempDep))
+			if(!TempDep.Contains("/Com_"))
 			{
 				bValid = false;
 				InvalidInfo.DepInvalidAssetName = AssetPackName;
@@ -1109,8 +1100,8 @@ bool FtpClientManager::IsAssetValidCodeSame(const FString& InPakName)
 	{
 		if (DepLocalFullPath.RemoveFromStart(TEXT("/Game/")))
 		{
-			//上传 传入资源绝对路径  /Game/Com_Material/Mat_wood_0_sad.uasset
-			DepLocalFullPath.ReplaceInline(TEXT(".uasset"), *(GetDefault<UFtpConfig>()->Suffix));
+			//上传 传入资源绝对路径  /Game/Com_Material/Mat_wood_0_sad
+			DepLocalFullPath.Append(GetDefault<UFtpConfig>()->Suffix);
 			DepServerPath = DepLocalFullPath;
 			DepLocalFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) + DepLocalFullPath;
 			GET_ASSET_VALIDCODE()
@@ -1129,6 +1120,8 @@ bool FtpClientManager::IsAssetValidCodeSame(const FString& InPakName)
 
 bool FtpClientManager::IsInstValidCodeSame(const FString& InstName)
 {
+	if(InstName.Contains(TEXT("Com_")))
+		return false;
   	FString LocalValidCode;
 	FString ServerValidCode;
 	FString localfilename;
@@ -1151,7 +1144,7 @@ bool FtpClientManager::IsInstValidCodeSame(const FString& InstName)
 	}
 	else
 	{
-		//下载 传入的是 Instance/ProjA
+		//下载 传入的是 Instance/ProjA   third   PluginName
 		serverfilename = InstName / clearnname + GetDefault<UFtpConfig>()->Suffix;
 		localfilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) + InstName / clearnname + GetDefault<UFtpConfig>()->Suffix;
 		GET_INST_VALIDCODE()
@@ -1163,6 +1156,12 @@ bool FtpClientManager::IsInstValidCodeSame(const FString& InstName)
 	}
 	//校验码相等返回 true
 	return (LocalValidCode.Equals(ServerValidCode));
+}
+
+bool FtpClientManager::IsPluginExist(const FString& PlugName)  //	Plugins/Marketplace/插件
+{
+	FString PluginFolder = GetDefault<UFtpConfig>()->PluginPath.Path + PlugName;
+	return (IFileManager::Get().DirectoryExists(*PluginFolder));
 }
 
 void FtpClientManager::HasDepencyThirdAsset(const FString& InGamePath, TArray<FString>& ThirdPartyName, TArray<FString>& PluginName)
@@ -1258,7 +1257,7 @@ void FtpClientManager::UploadPluginFolder(const TArray<FString>& InFolders)
 	for (const auto& temp : InFolders)
 	{
 		//是否存在校验码，没有则生成一个校验码
-		FString PluginFullPath = GetDefault<UFtpConfig>()->PluginPath.Path + temp;
+		FString PluginFullPath = GetDefault<UFtpConfig>()->PluginPath.Path + TEXT("Plugins/Marketplace/") + temp;
 		FString PluginValidCode = PluginFullPath / temp + GetDefault<UFtpConfig>()->Suffix;
 		if (!IFileManager::Get().FileExists(*PluginValidCode))
 		{
@@ -1269,7 +1268,7 @@ void FtpClientManager::UploadPluginFolder(const TArray<FString>& InFolders)
 	}
 	for (const auto& tempfolder : UploadPlugins)
 	{
-		FString PluginFullPath = GetDefault<UFtpConfig>()->PluginPath.Path + tempfolder;
+		FString PluginFullPath = GetDefault<UFtpConfig>()->PluginPath.Path + TEXT("Plugins/Marketplace/") + tempfolder;
 		TArray<FString> PluginFiles;
 		IFileManager::Get().FindFilesRecursive(PluginFiles, *PluginFullPath, TEXT("*"), true, false);
 		for (const auto& temp : PluginFiles)
@@ -1359,7 +1358,7 @@ bool FtpClientManager::DownloadDepenceAsset(const FString& InInstFolderPath) //I
 			//插件下载
 			for (const auto& temp : PluginNames)
 			{
-				FString PluginFolder = GetDefault<UFtpConfig>()->PluginPath.Path + temp;
+				FString PluginFolder = GetDefault<UFtpConfig>()->PluginPath.Path + TEXT("Plugins/Marketplace/") + temp;
 				if(!IFileManager::Get().DirectoryExists(*PluginFolder))
 					FTP_DownloadFiles(temp, GetDefault<UFtpConfig>()->PluginPath.Path);
 			}
@@ -1568,16 +1567,33 @@ _Program_Endl:
 
 bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder, FString Savepath)
 {
+	bool bIsPlugin = false;
+	if (serverFolder.Contains(TEXT("Plugins/")))
+	{	
+		bIsPlugin = true;
+		Savepath = GetDefault<UFtpConfig>()->PluginPath.Path;
+	}
 	EFileType fileType = JudgeserverPath(serverFolder);
 	bool bSuccessed = false;
 	TArray<FString> FileArr;
 	switch (fileType)
 	{
-	case EFileType::FOLDER:  //Com_Material   或者 Instance/ProjA  或者 third
-		if (IsInstValidCodeSame(serverFolder))
+	case EFileType::FOLDER:  //Com_Material   或者 Instance/ProjA  或者 third 或者 PluginName
+		if (bIsPlugin)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Orange, TEXT("it's already server version"));
-			return false;
+			if (IsPluginExist(serverFolder))
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Orange, TEXT("it's already server version"));
+				return false;
+			}
+		}
+		else
+		{
+			if (IsInstValidCodeSame(serverFolder))
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Orange, TEXT("it's already server version"));
+				return false;
+			}
 		}
 		if(FTP_ListFile(serverFolder, FileArr, false))
 		{
@@ -1597,8 +1613,17 @@ bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder, FString Sa
 	return bSuccessed;
 }
 
-bool FtpClientManager::FTP_UploadOneFile(const FString& localFileName, bool bIsPlugin)
+bool FtpClientManager::FTP_UploadOneFile(const FString& localFileName)
 {
+	if (localFileName.Contains(TEXT("/Com_")) && localFileName.Contains(TEXT(".uasset")))
+	{
+		FString PackName = localFileName;
+		PackName.RemoveFromStart(*(FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir())));
+		PackName = TEXT("/Game/") + PackName;
+		PackName.RemoveFromEnd(TEXT(".uasset"));
+		if (IsAssetValidCodeSame(PackName))
+			return true;
+	}
 	bool bSuccessed = true;
 	FString FileName = FPaths::GetCleanFilename(localFileName);
 	int32 size = 0;
@@ -1735,7 +1760,7 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 	}
 	//找出依赖资源的PackageName
 	TArray<FString> DepenAssetPackName;
-	for (const auto& tempdepenfile : depenfile)	//上传的是公共文件夹的话 这里会读取所有资源的.dep文件，上传实例文件夹的话这里只会读取  实例.dep
+	for (const auto& tempdepenfile : depenfile)	//上传的是公共文件夹的话 这里会读取所有资源的.dep文件，上传实例文件夹的话这里只会读取 实例.dep
 	{
 		//将依赖文件（Json格式），转换成结构体
 		FString Json;

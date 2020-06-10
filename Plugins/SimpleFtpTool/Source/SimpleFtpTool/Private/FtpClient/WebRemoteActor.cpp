@@ -38,15 +38,7 @@ void AWebRemoteActor::asd(const TArray<FString>& InputVal)
 	for (const auto& temp : InputVal)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, temp);
-		FString uplugin = temp / temp + TEXT(".uplugin");
-		if (FTP_INSTANCE->IsPlugin(uplugin))
-		{
-			FTP_INSTANCE->FTP_DownloadFiles(temp, GetDefault<UFtpConfig>()->PluginPath.Path);
-		}
-		else
-		{
-			FTP_INSTANCE->FTP_DownloadFiles(temp);
-		}
+		FTP_INSTANCE->FTP_DownloadFiles(temp);
 	}
 }
 
