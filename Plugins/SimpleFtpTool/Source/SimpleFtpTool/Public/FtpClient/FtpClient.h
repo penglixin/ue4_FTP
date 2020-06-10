@@ -27,11 +27,13 @@ public:
 	//1. 实例上传
 	//2. 单个资源上传
 	//3. 第三方文件加上传
-	bool UploadInstanceDescriptToWeb(const FString& InFolderPath, const TArray<FString>& ThirdFolders);
+	bool UploadInstanceDescriptToWeb(const FString& InFolderPath, const TArray<FString>& ThirdFolders, const TArray<FString>& InPluginPath);
 
 	bool UploadAssetsDescriptToWeb(const TArray<FString>& InAssetPaths);
 
 	bool UploadThirdFolderDescriptToWeb(const TArray<FString>& InThirdPath);
+
+	bool UploadPluginDescriptToWeb(const TArray<FString>& InPluginPath);
 	
 public:
 	/*********************************************************************/
@@ -47,9 +49,9 @@ public:
 	//下载单个文件 规定文件路径用/隔开 如：/Folder1/Folder2/adadd.txt localpath:需要用绝对路径如：E:/Game/Folder
 	bool FTP_DownloadOneFile(const FString& serverFileName, FString Savepath = GetDefault<UFtpConfig>()->DownloadPath.Path);
 	//下载文件夹里的所有文件 serverFolder:如 /asd				localpath:需要用绝对路径如：E:/Game/Folder
-	bool FTP_DownloadFiles(const FString& serverFolder);
+	bool FTP_DownloadFiles(const FString& serverFolder, FString Savepath = GetDefault<UFtpConfig>()->DownloadPath.Path);
 	//上传单个文件
-	bool FTP_UploadOneFile(const FString& localFileName);
+	bool FTP_UploadOneFile(const FString& localFileName, bool bIsPlugin = false);
 	//上传文件夹里的所有文件
 	bool FTP_UploadFilesByFolder(const FString& InGamePath, TArray<FString>& NameNotValidFiles, TArray<FInvalidDepInfo>& DepenNotValidFiles);
 	//根据PackageName上传资源
@@ -74,17 +76,19 @@ public:
 	bool ValidationAllDependenceOfTheFolder(const FString& InGamePath, TArray<FInvalidDepInfo>& NotValidDependences, bool bAllNameValid = false);
 	//上传文件以及依赖文件 传入资源的PackageName数组
 	bool UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames);
-	//判断服务器上是否存在该资源（发送SIZE 命令，根据服务器返回的响应码判断文件是否存在，然后再根据用户做出的选择是否覆盖服务器文件，这一步并没有使用到校验码）
-	bool OverrideAssetOnServer(const FString& FileFullPath);
+	//判断是插件还是普通资源（发送SIZE 命令，根据服务器返回的响应码判断文件是否存在，然后再根据用户做出的选择是否覆盖服务器文件，这一步并没有使用到校验码）
+	bool IsPlugin(const FString& ServerFileName);
 	//校验资源校验码
 	bool IsAssetValidCodeSame(const FString& InPakName);
 	//校验实例校验码
 	bool IsInstValidCodeSame(const FString& InstName);
 	//检查实例是否依赖第三方资源 传入实例文件夹路径
-	void HasDepencyThirdAsset(const FString& InGamePath, TArray<FString>& ThirdPartyName);
+	void HasDepencyThirdAsset(const FString& InGamePath, TArray<FString>& ThirdPartyName, TArray<FString>& PluginName);
 	//提交第三方文件夹
 	void UploadThirdPartyFolder(const TArray<FString>& InFolders);
-	//下载实例的依赖文件
+	//提交第三方文件夹
+	void UploadPluginFolder(const TArray<FString>& InFolders);
+	//下载实例的依赖文件（公共资源和依赖资源）
 	bool DownloadDepenceAsset(const FString& InInstFolderPath);
 	
 private:
@@ -119,8 +123,10 @@ private:
 	FSocket* dataSocket;		//数据连接 :在发送文件操作请求（上传下载）时建立连接，完成操作后断开连接
 	FIPv4Address ipAddr;
 	
-	//委托 上传第三方资源包
+	//上传第三方资源包
 	FUploadThirdPartyDelegate UploadThirdPartyDelegate;
+	//上传第三方插件
+	FUploadThirdPartyDelegate UploadPluginsDelegate;
 
 private:
 	FString DataTypeIni;

@@ -57,7 +57,6 @@ for (const auto& TempName : AllFileNames)\
 }
 
 
-
 #define NAME_VALIDATION_ASSET(Prefix)\
 UperFileName = AssetName.ToUpper(); \
 numArr1.Add(AssetName);\
@@ -123,7 +122,6 @@ SimpleFtpDataType::ConvertStructToString(depenlist, Json);\
 FFileHelper::SaveStringToFile(Json, *FileName)
 
 
-
 #define GENERATE_INST_FILE()\
 InstInfo.InstValidCode = FGuid::NewGuid().ToString();\
 for (const auto& temp : AllDependences)\
@@ -153,7 +151,7 @@ if (IFileManager::Get().FileExists(*DepLocalFullPath))\
 	{\
 		Json.Empty();\
 		DepInfo.Empty();\
-		FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + TEXT("/") + DepServerPath;\
+		FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + DepServerPath;\
 		FFileHelper::LoadFileToString(Json, *DepCachePath);\
 		if (SimpleFtpDataType::ConvertStringToStruct(Json, DepInfo))\
 		{\
@@ -171,8 +169,8 @@ else\
 #define GET_INST_VALIDCODE()\
 if (IFileManager::Get().FileExists(*localfilename))\
 {\
-	FFileHelper::LoadFileToString(Json, *localfilename);\
-	if (SimpleFtpDataType::ConvertStringToStruct(Json, instInfo))\
+	FFileHelper::LoadFileToString(Json1, *localfilename);\
+	if (SimpleFtpDataType::ConvertStringToStruct(Json1, instInfo))\
 	{\
 		LocalValidCode = instInfo.InstValidCode;\
 	}\
@@ -181,16 +179,15 @@ else\
 {\
 	return false;\
 }\
-if (FTP_DownloadOneFile(serverfilename,GetDefault<UFtpConfig>()->CachePath.Path))\
+if (FTP_DownloadOneFile(serverfilename, GetDefault<UFtpConfig>()->CachePath.Path))\
 {\
-	Json.Empty();\
 	instInfo.Empty();\
-	FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + TEXT("/") + serverfilename;\
-	FFileHelper::LoadFileToString(Json, *DepCachePath);\
-	if (SimpleFtpDataType::ConvertStringToStruct(Json, instInfo))\
+	FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + serverfilename;\
+	FFileHelper::LoadFileToString(Json2, *DepCachePath);\
+	if (SimpleFtpDataType::ConvertStringToStruct(Json2, instInfo))\
 	{\
 		ServerValidCode = instInfo.InstValidCode;\
 	}\
-	IFileManager::Get().Delete(*DepCachePath); \
+	IFileManager::Get().Delete(*DepCachePath);\
 }
 

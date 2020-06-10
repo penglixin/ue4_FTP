@@ -1,0 +1,16 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "OnlyContent",
+	"Description": "这是一个空的插件",
+	"Category": "Other",
+	"CreatedBy": "",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "4.24.0",
+	"CanContainContent": true,
+	"Installed": true
+}
