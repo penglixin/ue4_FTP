@@ -6,7 +6,7 @@
 #define SUCCEED_TRANSFER 226  //上传，下载成功
 #define FILE_EXIST 213  //判断文件是否存在于服务器
 
-#define NAME_VALIDATION_FOLDER(Prefix)  \
+#define NAME_VALIDATION_FOLDER(Prefix)\
 for (const auto& TempName : AllFileNames)\
 {\
 	FString UperFileName = TempName.ToUpper();\

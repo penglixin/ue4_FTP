@@ -21,5 +21,6 @@ UFtpConfig::UFtpConfig()
 	InsProjectName = TEXT("ProjOne");
 
 	WebURL = TEXT("http://192.168.0.186:8080/site/");
+
 }
 

@@ -43,4 +43,3 @@ struct SIMPLEHTTPTOOL_API FHttpDelegate
 };
 
 
-

@@ -77,7 +77,7 @@ public:
 	//上传文件以及依赖文件 传入资源的PackageName数组
 	bool UploadDepenceAssetAndDepences(const TArray<FString>& InPackageNames);
 	//判断是插件还是普通资源（发送SIZE 命令，根据服务器返回的响应码判断文件是否存在，然后再根据用户做出的选择是否覆盖服务器文件，这一步并没有使用到校验码）
-	bool IsPlugin(const FString& ServerFileName);
+	//bool IsPlugin(const FString& ServerFileName);
 	//校验资源校验码
 	bool IsAssetValidCodeSame(const FString& InPakName);
 	//校验实例校验码
@@ -88,7 +88,7 @@ public:
 	void HasDepencyThirdAsset(const FString& InGamePath, TArray<FString>& ThirdPartyName, TArray<FString>& PluginName);
 	//提交第三方文件夹
 	void UploadThirdPartyFolder(const TArray<FString>& InFolders);
-	//提交第三方文件夹
+	//提交插件文件夹
 	void UploadPluginFolder(const TArray<FString>& InFolders);
 	//下载实例的依赖文件（公共资源和依赖资源）
 	bool DownloadDepenceAsset(const FString& InInstFolderPath);
@@ -98,6 +98,8 @@ private:
 	FString GetMylocalIPADDR();
 	//接受服务端返回的消息
 	bool ReceiveData(FSocket* sock, FString& RecvMesg, TArray<uint8>& dataArray, bool bSleep = true);
+	//发送PASV命令，获取服务器返回的端口号  单独把这条命令拿出来是为了方便获取服务器返回的端口
+	int32 SendPASVCommand();
 	//创建 dataSocket
 	bool CreateDataSocket_PASV(int32 port2);
 	//将接收到的二进制数据转换成FString
@@ -106,8 +108,7 @@ private:
 	FString SwitchCommand(const EFtpCommandType& cmdtype, const FString& Param);
 	//从服务器返回的字符串中获取新的端口号
 	int32 GetPASVPortFromString(const FString& RecvMesg);
-	//发送PASV命令，获取服务器返回的端口号  单独把这条命令拿出来是为了方便获取服务器返回的端口
-	int32 SendPASVCommand();
+	
 	//判断传入的serverPath是文件 还是 文件夹
 	EFileType JudgeserverPath(const FString& InserverPath);
 	

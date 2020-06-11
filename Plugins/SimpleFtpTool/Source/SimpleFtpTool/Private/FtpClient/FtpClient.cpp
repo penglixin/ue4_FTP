@@ -17,6 +17,7 @@
 #endif
 
 
+
 //传入文件路径，获取文件大小
 int64_t getFileSize(const FString& InfilePath)
 {
@@ -118,7 +119,7 @@ bool FtpClientManager::UploadInstanceDescriptToWeb(const FString& InFolderPath, 
 	if(InstanceIconPath.IsEmpty() || Description.IsEmpty())
 	{
 		Tips = TEXT("You have some Instance Description that you didn't fill in.");
-		FMessageDialog::Open(EAppMsgType::Ok,FText::FromString(Tips));
+		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(Tips));
 		return false;
 	}
 	else
@@ -213,7 +214,8 @@ bool FtpClientManager::UploadAssetsDescriptToWeb(const TArray<FString>& InAssetP
 		TArray<FString> folderlevel;
 		temp.ParseIntoArray(folderlevel, TEXT("/"));
 		FString AssetNameNoExtension = folderlevel[folderlevel.Num() - 1];   //Mat_Wood_0_desc.uasset
-		FString AssetPath = folderlevel[folderlevel.Num() - 2] / folderlevel[folderlevel.Num() - 1] + TEXT(".uasset");	//  Com_Material/Mat_Wood_0_desc.uasset
+		FString suffix = temp.Contains(TEXT(".uasset")) ? TEXT("") : TEXT(".uasset");
+		FString AssetPath = folderlevel[folderlevel.Num() - 2] / folderlevel[folderlevel.Num() - 1] + suffix;	//  Com_Material/Mat_Wood_0_desc.uasset
 		
 		bool bContain = false;
 		FString Desc;
@@ -1081,11 +1083,11 @@ bool FtpClientManager::UploadDepenceAssetAndDepences(const TArray<FString>& InPa
 	return true;
 }
 
-bool FtpClientManager::IsPlugin(const FString& ServerFileName)
-{
-	FTP_SendCommand(EFtpCommandType::SIZE, ServerFileName);
-	return (FILE_EXIST == ResponseCode);
-}
+//bool FtpClientManager::IsPlugin(const FString& ServerFileName)
+//{
+//	FTP_SendCommand(EFtpCommandType::SIZE, ServerFileName);
+//	return (FILE_EXIST == ResponseCode);
+//}
 
 bool FtpClientManager::IsAssetValidCodeSame(const FString& InPakName)
 {
@@ -1539,7 +1541,7 @@ bool FtpClientManager::FTP_DownloadOneFile(const FString& serverFileName, FStrin
 		bSuccessed = false;
 		goto _Program_Endl;
 	}
-	//传输文件操作   命令发送成功但是没有这个文件，返回550
+	//传输文件操作   命令发送成功但是没有这个文件，返回  550
 	if((false == FTP_SendCommand(EFtpCommandType::RETR, serverFileName)) || (ERROR_DIRECTORY == ResponseCode))
 	{
 		bSuccessed = false;
@@ -1548,7 +1550,7 @@ bool FtpClientManager::FTP_DownloadOneFile(const FString& serverFileName, FStrin
 	ReceiveData(dataSocket, Mesg, RecvBinary);
 	if(FFileHelper::SaveArrayToFile(RecvBinary, *FileSaveName))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Purple, "Download "+ serverFileName + " succeed!");
+		GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Purple, "Download " + serverFileName + " succeed!");
 		bSuccessed = true;
 	}
 	else
@@ -1569,7 +1571,7 @@ bool FtpClientManager::FTP_DownloadFiles(const FString& serverFolder, FString Sa
 {
 	bool bIsPlugin = false;
 	if (serverFolder.Contains(TEXT("Plugins/")))
-	{	
+	{
 		bIsPlugin = true;
 		Savepath = GetDefault<UFtpConfig>()->PluginPath.Path;
 	}
@@ -1712,13 +1714,13 @@ bool FtpClientManager::FTP_UploadFilesByFolder(const FString& InGamePath, TArray
 		return false;
 	}
 
+	DeleteUselessFile();
 	TArray<FString> localFiles;  //本地路径下的所有文件 包括生成的依赖文件
 	GetAllFileFromLocalPath(FullPath, localFiles);
-	DeleteUselessFile();
 	TArray<FString> ThirdPartyNames;
 	TArray<FString> PluginNames;
 	if(InGamePath.Contains(TEXT("/Instance/")))
-	{	
+	{
 		HasDepencyThirdAsset(InGamePath, ThirdPartyNames, PluginNames);
 		if (ThirdPartyNames.Num())
 		{
@@ -1887,7 +1889,7 @@ bool FtpClientManager::FTP_UploadFilesByAsset(const TArray<FString>& InPackNames
 		ShowMessageBox(NameNotValidFiles, DepenNotValidFiles);
 		return false;
 	}
-
+	DeleteUselessFile();
 	//验证校验码
 	TArray<FString> ValideCodeAssets;
 	for (const auto& pakname : InPackNames)
