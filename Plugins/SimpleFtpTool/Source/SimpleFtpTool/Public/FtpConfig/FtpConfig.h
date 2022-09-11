@@ -55,5 +55,8 @@ public:
 
 	UPROPERTY(config, EditAnyWhere, Category = "FtpAssetDownloadPath", meta = (EditCondition  = "false", ToolTip = "the path to save download file."))
 		FDirectoryPath DownloadPath;
+
+	UPROPERTY(config, EditAnyWhere, Category = "FtpPluginDownloadPath", meta = (EditCondition = "false", ToolTip = "the path to save download plugins."))
+		FDirectoryPath PluginPath;
 	
 };

@@ -6,7 +6,7 @@
 #define SUCCEED_TRANSFER 226  //上传，下载成功
 #define FILE_EXIST 213  //判断文件是否存在于服务器
 
-#define NAME_VALIDATION_FOLDER(Prefix)  \
+#define NAME_VALIDATION_FOLDER(Prefix)\
 for (const auto& TempName : AllFileNames)\
 {\
 	FString UperFileName = TempName.ToUpper();\
@@ -55,7 +55,6 @@ for (const auto& TempName : AllFileNames)\
 		numArr2.Add(FGuid::NewGuid().ToString());\
 	}\
 }
-
 
 
 #define NAME_VALIDATION_ASSET(Prefix)\
@@ -123,7 +122,6 @@ SimpleFtpDataType::ConvertStructToString(depenlist, Json);\
 FFileHelper::SaveStringToFile(Json, *FileName)
 
 
-
 #define GENERATE_INST_FILE()\
 InstInfo.InstValidCode = FGuid::NewGuid().ToString();\
 for (const auto& temp : AllDependences)\
@@ -149,11 +147,11 @@ if (IFileManager::Get().FileExists(*DepLocalFullPath))\
 	{\
 		LocalValidCode = DepInfo.ValidCode;\
 	}\
-	if (FTP_DownloadOneFile(DepServerPath))\
+	if (FTP_DownloadOneFile(DepServerPath,GetDefault<UFtpConfig>()->CachePath.Path))\
 	{\
 		Json.Empty();\
 		DepInfo.Empty();\
-		FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + TEXT("/") + DepServerPath;\
+		FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + DepServerPath;\
 		FFileHelper::LoadFileToString(Json, *DepCachePath);\
 		if (SimpleFtpDataType::ConvertStringToStruct(Json, DepInfo))\
 		{\
@@ -161,27 +159,35 @@ if (IFileManager::Get().FileExists(*DepLocalFullPath))\
 		}\
 		IFileManager::Get().Delete(*DepCachePath);\
 	}\
+}\
+else\
+{\
+	return false;\
 }
 
 
 #define GET_INST_VALIDCODE()\
 if (IFileManager::Get().FileExists(*localfilename))\
 {\
-	FFileHelper::LoadFileToString(Json, *localfilename);\
-	if (SimpleFtpDataType::ConvertStringToStruct(Json, instInfo))\
+	FFileHelper::LoadFileToString(Json1, *localfilename);\
+	if (SimpleFtpDataType::ConvertStringToStruct(Json1, instInfo))\
 	{\
 		LocalValidCode = instInfo.InstValidCode;\
 	}\
 }\
-if (FTP_DownloadOneFile(serverfilename))\
+else\
 {\
-	Json.Empty();\
+	return false;\
+}\
+if (FTP_DownloadOneFile(serverfilename, GetDefault<UFtpConfig>()->CachePath.Path))\
+{\
 	instInfo.Empty();\
-	FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + TEXT("/") + serverfilename;\
-	FFileHelper::LoadFileToString(Json, *DepCachePath);\
-	if (SimpleFtpDataType::ConvertStringToStruct(Json, instInfo))\
+	FString DepCachePath = GetDefault<UFtpConfig>()->CachePath.Path + serverfilename;\
+	FFileHelper::LoadFileToString(Json2, *DepCachePath);\
+	if (SimpleFtpDataType::ConvertStringToStruct(Json2, instInfo))\
 	{\
 		ServerValidCode = instInfo.InstValidCode;\
 	}\
-	IFileManager::Get().Delete(*DepCachePath); \
+	IFileManager::Get().Delete(*DepCachePath);\
 }
+

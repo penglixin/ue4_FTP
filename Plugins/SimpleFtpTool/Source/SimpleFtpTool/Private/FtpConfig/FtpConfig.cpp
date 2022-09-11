@@ -1,31 +1,17 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "FtpConfig/FtpConfig.h"
-#include "HAL/PlatformFilemanager.h"
 #include "Misc/Paths.h"
-#include "GenericPlatform/GenericPlatformFile.h"
 
 
 UFtpConfig::UFtpConfig()
 {
-	IPlatformFile& platform = FPlatformFileManager::Get().GetPlatformFile();
-	if (CachePath.Path.IsEmpty())
-	{
-		CachePath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("DepCache"));
-		if (!platform.DirectoryExists(*CachePath.Path))
-		{
-			platform.CreateDirectory(*CachePath.Path);
-		}
-	}
+	CachePath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir());
 	
-	if (DownloadPath.Path.IsEmpty())
-	{
-		DownloadPath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
-		if (!platform.DirectoryExists(*DownloadPath.Path))
-		{
-			platform.CreateDirectory(*DownloadPath.Path);
-		}
-	}
+	DownloadPath.Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+
+	PluginPath.Path = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+
 	sleeptime = 0.2f;
 
 	bShowServerMesg = true;
@@ -35,5 +21,6 @@ UFtpConfig::UFtpConfig()
 	InsProjectName = TEXT("ProjOne");
 
 	WebURL = TEXT("http://192.168.0.186:8080/site/");
+
 }
 
