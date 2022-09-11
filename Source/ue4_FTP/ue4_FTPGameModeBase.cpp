@@ -80,6 +80,14 @@ bool Aue4_FTPGameModeBase::Decode(FString Source, TArray<uint8> & Dest)
 
 bool Aue4_FTPGameModeBase::SaveArrayToFile(const TArray<uint8>& Data, FString localpath)
 {
+	/*char* cpResult = cs1->cname;
+	int dwNum = MultiByteToWideChar(CP_ACP, 0, cpResult, strlen(cpResult) + 1, NULL, 0);
+	wchar_t* widebuff = new wchar_t[dwNum];
+	MultiByteToWideChar(CP_ACP, 0, cpResult, strlen(cpResult) + 1, widebuff, dwNum);
+
+	FString str = FString(widebuff);*/
+	FString str = TEXT("这是中文啊 啊啊啊啊啊");
+	FFileHelper::SaveStringToFile(str, *localpath);
 	return FFileHelper::SaveArrayToFile(Data, *localpath);
 }
 
